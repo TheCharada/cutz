@@ -1,0 +1,59 @@
+{
+  "name": "cutz",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0 <23"
+  },
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "dev": "next dev",
+    "dev:worker": "tsx watch src/worker/index.ts",
+    "build": "next build",
+    "build:worker": "tsup src/worker/index.ts --format esm --platform node --target node22 --out-dir dist/worker --clean --no-splitting",
+    "build:migrate": "tsup scripts/db/migrate.ts --format esm --platform node --target node22 --out-dir dist/db --no-splitting",
+    "build:bootstrap": "tsup scripts/db/bootstrap.ts --format esm --platform node --target node22 --out-dir dist/db --no-splitting",
+    "start": "next start",
+    "start:worker": "node dist/worker/index.js",
+    "start:migrate": "node dist/db/migrate.js",
+    "start:bootstrap": "node dist/db/bootstrap.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "arch": "depcruise --config .dependency-cruiser.cjs --ts-config tsconfig.json src",
+    "test": "vitest run src --passWithNoTests",
+    "test:watch": "vitest src",
+    "test:integration": "vitest run --config vitest.integration.config.ts tests/integration --passWithNoTests",
+    "test:e2e": "pnpm --dir tests/e2e test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/db/migrate.ts",
+    "db:seed": "tsx scripts/db/seed.ts"
+  },
+  "dependencies": {
+    "argon2": "^0.45.1",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "next": "^16.3.4",
+    "pg": "^8.23.0",
+    "pino": "^10.3.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.20.1",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "19.2.5",
+    "dependency-cruiser": "^18.2.0",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.4",
+    "tailwindcss": "^4.3.3",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  }
+}

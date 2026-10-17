@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# next
+.next/
+out/
+
+# build
+/dist/
+/coverage/
+
+# environment
+.env
+.env.*
+!.env.example
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.sqlite
+*.sqlite3
+
+# logs
+*.log
+pnpm-debug.log*
+
+# tooling
+*.tsbuildinfo
+.DS_Store

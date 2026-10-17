@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    # Run untrusted pull-request code on an isolated hosted runner.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      COMPOSE_PROJECT_NAME: cutz-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      CUTZ_IMAGE: cutz-ci:${{ github.run_id }}-${{ github.run_attempt }}
+      POSTGRES_DB: cutz_test
+      POSTGRES_USER: cutz
+      POSTGRES_PASSWORD: cutz
+      POSTGRES_PORT: "55432"
+      DATABASE_URL: postgresql://cutz:cutz@127.0.0.1:55432/cutz_test
+      TEST_DATABASE_URL: postgresql://cutz:cutz@127.0.0.1:55432/cutz_test
+      APP_ORIGIN: http://127.0.0.1:3000
+      DEFAULT_PHONE_COUNTRY: BR
+      OTP_SECRET: cutz-ci-otp-secret-at-least-32-characters
+      SEED_ADMIN_EMAIL: admin@cutz.local
+      SEED_ADMIN_PASSWORD: cutz-dev-password
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.25.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install E2E dependencies
+        run: cd tests/e2e && pnpm install --ignore-workspace --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Check architecture
+        run: pnpm arch
+
+      - name: Check migrations
+        id: migrations
+        run: |
+          pnpm db:generate
+          git diff --exit-code -- drizzle
+
+      - name: Save migration drift
+        if: failure() && steps.migrations.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-drift
+          path: drizzle
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build web
+        run: pnpm build
+
+      - name: Build worker
+        run: pnpm build:worker
+
+      - name: Build container image
+        run: docker build --tag "$CUTZ_IMAGE" .
+
+      - name: Validate production compose
+        run: docker compose -f docker-compose.production.yml config >/dev/null
+
+      - name: Start PostgreSQL
+        run: docker compose up -d postgres
+
+      - name: Wait for PostgreSQL
+        run: |
+          for attempt in $(seq 1 30); do
+            if docker compose exec -T postgres pg_isready -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker compose logs postgres
+          exit 1
+
+      - name: Apply migrations from production image
+        run: docker run --rm --network host -e DATABASE_URL="$DATABASE_URL" "$CUTZ_IMAGE" pnpm start:migrate
+
+      - name: Bootstrap database from production image
+        run: |
+          docker run --rm --network host \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e SEED_ADMIN_EMAIL="$SEED_ADMIN_EMAIL" \
+            -e SEED_ADMIN_PASSWORD="$SEED_ADMIN_PASSWORD" \
+            "$CUTZ_IMAGE" pnpm start:bootstrap
+
+      - name: Verify production bootstrap
+        run: |
+          tenant_count="$(docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(*) from barbershops where slug = 'demo'")"
+          fixture_count="$(docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(*) from customers where name in ('E2E Complete', 'E2E No-show')")"
+          test "$tenant_count" = "1"
+          test "$fixture_count" = "0"
+
+      - name: Seed database
+        run: pnpm db:seed
+
+      - name: Integration tests
+        run: pnpm test:integration
+
+      - name: Install Chromium
+        run: cd tests/e2e && pnpm --ignore-workspace run install:chromium
+
+      - name: Start web
+        run: |
+          pnpm start > /tmp/cutz-web-${{ github.run_id }}.log 2>&1 &
+          echo $! > .cutz-web.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error "$APP_ORIGIN/api/health" >/dev/null && \
+               curl --fail --silent --show-error "$APP_ORIGIN/b/demo" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/cutz-web-${{ github.run_id }}.log
+          exit 1
+
+      - name: E2E tests
+        run: cd tests/e2e && pnpm --ignore-workspace run test
+
+      - name: Clean up
+        if: always()
+        run: |
+          if [ -f .cutz-web.pid ]; then
+            kill "$(cat .cutz-web.pid)" >/dev/null 2>&1 || true
+          fi
+          docker compose down -v --remove-orphans
+          docker image rm -f "$CUTZ_IMAGE" >/dev/null 2>&1 || true

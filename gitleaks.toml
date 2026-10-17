@@ -1,0 +1,20 @@
+title = "Cutz secret scanning policy"
+
+[extend]
+useDefault = true
+
+# Only these deterministic demo OTP values are safe to publish.
+# Keep the generic-api-key rule active everywhere else.
+[[allowlists]]
+description = "Known fake OTP values in isolated test and CI files"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+regexes = [
+  '''^cutz-integration-otp-secret-at-least-32-characters$''',
+  '''^cutz-ci-otp-secret-at-least-32-characters$''',
+]
+paths = [
+  '''^tests/integration/customer-otp\.test\.ts$''',
+  '''^\.github/workflows/ci\.yml$''',
+]
