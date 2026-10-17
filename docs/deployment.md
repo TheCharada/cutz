@@ -13,17 +13,18 @@ O Compose de produção usa `MESSAGING_PROVIDER=fake` por padrão, sem dependên
 
 O PostgreSQL **não** publica sua porta na rede do host. O serviço web é ligado a `127.0.0.1:3000` por padrão; configure o proxy reverso no mesmo host para expor apenas as portas 80/443.
 
-## Construir imagem e configurar variáveis
+## Obter imagem e configurar variáveis
+
+A mesma imagem de aplicação contém os processos web, worker e as ferramentas de migração e bootstrap. Ela pode ser obtida de um registro OCI ou construída localmente.
 
 ```bash
-docker build -t cutz:local .
 cp .env.example .env.production
 ```
 
 Edite o arquivo `.env.production` (ignorado pelo Git). Configure:
 
 ```dotenv
-CUTZ_IMAGE=cutz:local
+CUTZ_IMAGE=ghcr.io/thecharada/cutz:sha-<sha-completo-do-commit>
 POSTGRES_DB=cutz
 POSTGRES_USER=cutz
 POSTGRES_PASSWORD=<senha-aleatoria-forte>
@@ -37,6 +38,14 @@ WEB_PORT=3000
 ```
 
 Esses campos são exemplos, **não** credenciais válidas ou valores a serem commitados. Para o banco, use uma senha compatível com interpolação de URL, ou faça o encoding correto de caracteres reservados antes de construir `DATABASE_URL`. O `APP_ORIGIN` deve coincidir com a origem HTTPS acessada pelos usuários.
+
+Para usar a imagem distribuída, substitua o SHA pelo identificador completo do commit correspondente e baixe-a antes de iniciar os serviços:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.production.yml pull migrate web worker
+```
+
+Se o registro exigir autenticação, faça `docker login` antes do pull. Para construir a imagem localmente, execute `docker build -t cutz:local .` e use `CUTZ_IMAGE=cutz:local` no ambiente. Prefira a tag de commit para implantações reproduzíveis; `latest` pode mudar a cada publicação.
 
 ## Iniciar o ambiente do zero
 
