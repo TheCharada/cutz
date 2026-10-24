@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       await disableTelegramChat(command.chatId);
       return botResponse(command.chatId, "As notificações do Cutz foram desativadas neste chat.");
     }
-    const result = await redeemTelegramLink(command);
+    const result = await redeemTelegramLink({ token: command.token, chatId: command.chatId });
     return botResponse(
       command.chatId,
       result === "linked"
