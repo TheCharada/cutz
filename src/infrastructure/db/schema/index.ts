@@ -6,3 +6,4 @@ export * from "./enums";
 export * from "./identity";
 export * from "./notifications";
 export * from "./waitlist";
+export * from "./telegram";
