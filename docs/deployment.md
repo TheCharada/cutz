@@ -39,7 +39,7 @@ WEB_PORT=3000
 
 Esses campos são exemplos, **não** credenciais válidas ou valores a serem commitados. Para o banco, use uma senha compatível com interpolação de URL, ou faça o encoding correto de caracteres reservados antes de construir `DATABASE_URL`. O `APP_ORIGIN` deve coincidir com a origem HTTPS acessada pelos usuários.
 
-Para usar a imagem distribuída, substitua o SHA pelo identificador completo do commit correspondente e baixe-a antes de iniciar os serviços:
+A imagem distribuída disponibiliza variantes `linux/amd64` e `linux/arm64` sob as mesmas tags. O Docker seleciona automaticamente a arquitetura compatível com o host. Para usá-la, substitua o SHA pelo identificador completo do commit correspondente e baixe-a antes de iniciar os serviços:
 
 ```bash
 docker compose --env-file .env.production -f docker-compose.production.yml pull migrate web worker
