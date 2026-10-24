@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb, type Database } from "@/infrastructure/db/client";
-import { appointments, telegramChatLinks, telegramLinkTokens, waitlistEntries } from "@/infrastructure/db/schema";
+import { telegramChatLinks, telegramLinkTokens } from "@/infrastructure/db/schema";
 import { getAppointmentByManagementTokenHash, getAppointmentById } from "@/modules/scheduling";
 import { getWaitlistEntryById, getWaitlistEntryByManagementTokenHash } from "@/modules/waitlist";
 import { createOpaqueToken, hashOpaqueToken } from "@/shared/tokens";
