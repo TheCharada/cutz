@@ -13,12 +13,14 @@ export function PublicBookingExperience({
   services,
   staff,
   initialCustomer,
+  telegramEnabled,
 }: {
   slug: string;
   timezone: string;
   services: PublicService[];
   staff: PublicStaffMember[];
   initialCustomer: RememberedCustomer | null;
+  telegramEnabled: boolean;
 }) {
   const router = useRouter();
   const [customer, setCustomer] = useState<RememberedCustomer | null>(initialCustomer);
@@ -38,6 +40,7 @@ export function PublicBookingExperience({
   return (
     <div className="space-y-10">
       <BookingFlow
+        telegramEnabled={telegramEnabled}
         slug={slug}
         timezone={timezone}
         services={services}
@@ -49,6 +52,7 @@ export function PublicBookingExperience({
         onSwitchCustomer={switchCustomer}
       />
       <WaitlistForm
+        telegramEnabled={telegramEnabled}
         slug={slug}
         services={services}
         staff={staff}
