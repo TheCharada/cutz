@@ -167,8 +167,10 @@ jobs:
       matrix:
         include:
           - arch: amd64
+            node_arch: x64
             runner: ubuntu-24.04
           - arch: arm64
+            node_arch: arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
@@ -207,10 +209,13 @@ jobs:
         env:
           IMAGE: ${{ steps.image.outputs.commit_tag }}
           EXPECTED_ARCH: ${{ matrix.arch }}
+          EXPECTED_NODE_ARCH: ${{ matrix.node_arch }}
         run: |
           test "$(docker image inspect "$IMAGE" --format '{{.Os}}/{{.Architecture}}')" = "linux/$EXPECTED_ARCH"
-          docker run --rm --platform "linux/$EXPECTED_ARCH" -e EXPECTED_ARCH="$EXPECTED_ARCH" --entrypoint /bin/sh "$IMAGE" -ec '
-            test "$(node -p "process.arch")" = "$EXPECTED_ARCH"
+          docker run --rm --platform "linux/$EXPECTED_ARCH" -e EXPECTED_NODE_ARCH="$EXPECTED_NODE_ARCH" --entrypoint /bin/sh "$IMAGE" -ec '
+            node_arch="$(node -p "process.arch")"
+            echo "Node.js architecture: $node_arch (expected: $EXPECTED_NODE_ARCH)"
+            test "$node_arch" = "$EXPECTED_NODE_ARCH"
             test -f dist/db/migrate.js
             test -f dist/db/bootstrap.js
             test -f dist/worker/index.js
