@@ -15,6 +15,13 @@
       "when": 1788652458068,
       "tag": "0001_cold_richard_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792872000000,
+      "tag": "0002_telegram_chat_links",
+      "breakpoints": true
     }
   ]
 }
