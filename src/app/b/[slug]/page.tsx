@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+import { isTelegramLinkingEnabled } from "@/config/telegram-linking";
 import { PageHeader } from "@/components/cutz/page-header";
 import { PageShell } from "@/components/cutz/page-shell";
 import { customerSessionCookieName } from "@/infrastructure/http";
@@ -54,6 +55,7 @@ export default async function PublicBookingPage({ params }: PageProps) {
           services={services}
           staff={staff}
           initialCustomer={initialCustomer}
+          telegramEnabled={isTelegramLinkingEnabled()}
         />
       </div>
     </PageShell>
