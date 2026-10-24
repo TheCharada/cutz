@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { TelegramLinkCard } from "@/components/cutz/telegram-link-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import type { RememberedCustomer } from "./customer-session-types";
 import { OtpVerification, type PublicOtpChallenge } from "./otp-verification";
 
 type BookingFlowProps = {
+  telegramEnabled: boolean;
   slug: string;
   timezone: string;
   services: PublicService[];
@@ -43,6 +45,7 @@ function localSlotLabel(iso: string, timezone: string) {
 }
 
 export function BookingFlow({
+  telegramEnabled,
   slug,
   timezone,
   services,
@@ -225,6 +228,11 @@ export function BookingFlow({
           >
             Gerenciar agendamento
           </a>
+          {telegramEnabled ? (
+            <div className="mt-6 text-left">
+              <TelegramLinkCard scope="appointment" managementUrl={managementUrl} />
+            </div>
+          ) : null}
         </div>
       </Card>
     );
