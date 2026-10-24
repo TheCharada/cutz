@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { TelegramLinkCard } from "@/components/cutz/telegram-link-card";
+import { isTelegramLinkingEnabled } from "@/config/telegram-linking";
 import { CapabilityDetails } from "@/components/cutz/capability-details";
 import { PageHeader } from "@/components/cutz/page-header";
 import { PageShell } from "@/components/cutz/page-shell";
@@ -93,6 +95,10 @@ export default async function AppointmentCapabilityPage({ params }: PageProps) {
             ) : null}
           </CardContent>
         </Card>
+
+        {result.appointment.status === "SCHEDULED" && isTelegramLinkingEnabled() ? (
+          <TelegramLinkCard scope="appointment" managementUrl={`/a/${token}`} />
+        ) : null}
 
         {result.appointment.status === "SCHEDULED" ? (
           <AppointmentManagement
