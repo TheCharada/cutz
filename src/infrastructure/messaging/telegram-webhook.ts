@@ -2,14 +2,14 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
 const telegramUpdateSchema = z.object({
-  update_id: z.number().int().safe(),
+  update_id: z.number().int().refine(Number.isSafeInteger),
   message: z.object({
     chat: z.object({
-      id: z.number().int().safe(),
+      id: z.number().int().refine(Number.isSafeInteger),
       type: z.string(),
     }).passthrough(),
     from: z.object({
-      id: z.number().int().safe(),
+      id: z.number().int().refine(Number.isSafeInteger),
       is_bot: z.boolean().optional(),
     }).passthrough().optional(),
     text: z.string().max(256).optional(),
