@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { TelegramLinkCard } from "@/components/cutz/telegram-link-card";
+import { isTelegramLinkingEnabled } from "@/config/telegram-linking";
 import { CapabilityDetails } from "@/components/cutz/capability-details";
 import { PageHeader } from "@/components/cutz/page-header";
 import { PageShell } from "@/components/cutz/page-shell";
@@ -79,6 +81,10 @@ export default async function WaitlistPage({ params }: PageProps) {
             ) : null}
           </CardContent>
         </Card>
+
+        {result.entry.status === "ACTIVE" && isTelegramLinkingEnabled() ? (
+          <TelegramLinkCard scope="waitlist" managementUrl={`/w/${token}`} />
+        ) : null}
 
         {result.entry.status === "ACTIVE" ? <WaitlistManagement token={token} /> : null}
       </div>
