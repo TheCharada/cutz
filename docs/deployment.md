@@ -82,7 +82,7 @@ docker compose --env-file .env.production -f docker-compose.production.yml logs 
 
 ## Mensageria
 
-Com `MESSAGING_PROVIDER=fake`, nenhum envio externo é realizado. O provider Meta/WhatsApp continua opcional; seu contrato está em [whatsapp-meta.md](whatsapp-meta.md). Outros provedores de mensageria podem ser adicionados pela interface do domínio.
+Com `MESSAGING_PROVIDER=fake`, nenhum envio externo é realizado. Para vincular chats e enviar notificações opcionais pelo bot do Telegram, siga [telegram.md](telegram.md). O provider Meta/WhatsApp continua opcional; seu contrato está em [whatsapp-meta.md](whatsapp-meta.md).
 
 Os segredos da Meta não devem ficar no README, no código ou em logs. Uma troca de domínio exige atualizar `APP_ORIGIN` e os templates de URL dinâmica, caso WhatsApp venha a ser habilitado futuramente.
 

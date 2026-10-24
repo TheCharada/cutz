@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { TelegramLinkCard } from "@/components/cutz/telegram-link-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,6 +23,7 @@ const selectClassName =
   "h-10 w-full rounded-xl border border-input bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/35 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-70";
 
 export function WaitlistForm({
+  telegramEnabled,
   slug,
   services,
   staff,
@@ -31,6 +33,7 @@ export function WaitlistForm({
   onCustomerSessionInvalid,
   onSwitchCustomer,
 }: {
+  telegramEnabled: boolean;
   slug: string;
   services: PublicService[];
   staff: PublicStaffMember[];
@@ -147,6 +150,11 @@ export function WaitlistForm({
         >
           Gerenciar lista de espera
         </a>
+        {telegramEnabled ? (
+          <div className="mt-5">
+            <TelegramLinkCard scope="waitlist" managementUrl={managementUrl} />
+          </div>
+        ) : null}
       </Card>
     );
   }
