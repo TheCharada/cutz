@@ -2,7 +2,10 @@ import { z } from "zod";
 import { databaseEnvSchema } from "./env";
 
 const positiveInteger = z.coerce.number().int().positive();
-const optionalNonEmpty = z.string().trim().min(1).optional();
+const optionalNonEmpty = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z.string().trim().min(1).optional(),
+);
 
 const workerEnvSchema = databaseEnvSchema.extend({
   APP_ORIGIN: z.url(),
