@@ -215,7 +215,7 @@ jobs:
             test -f dist/db/bootstrap.js
             test -f dist/worker/index.js
             node node_modules/next/dist/bin/next --version
-            node -e "const argon2 = require(\\"argon2\\"); argon2.hash(\\"runtime-check\\").then(hash => argon2.verify(hash, \\"runtime-check\\")).then(valid => { if (!valid) process.exit(1); }).catch(error => { console.error(error); process.exit(1); });"
+            node -e "const argon2 = require(\"argon2\"); argon2.hash(\"runtime-check\").then(hash => argon2.verify(hash, \"runtime-check\")).then(valid => { if (!valid) process.exit(1); }).catch(error => { console.error(error); process.exit(1); });"
           '
 
       - name: Log in to GHCR
