@@ -9,7 +9,8 @@ const optionalNonEmpty = z.preprocess(
 
 const workerEnvSchema = databaseEnvSchema.extend({
   APP_ORIGIN: z.url(),
-  MESSAGING_PROVIDER: z.enum(["fake", "whatsapp"]),
+  MESSAGING_PROVIDER: z.enum(["fake", "whatsapp", "telegram"]),
+  TELEGRAM_BOT_TOKEN: optionalNonEmpty,
   WHATSAPP_ACCESS_TOKEN: optionalNonEmpty,
   WHATSAPP_PHONE_NUMBER_ID: optionalNonEmpty,
   WHATSAPP_GRAPH_API_VERSION: optionalNonEmpty,
