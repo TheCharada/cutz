@@ -191,6 +191,7 @@ export class TelegramMessagingProvider {
       }
       throw new MessagingProviderError(`Telegram request failed with status ${response.status}`, {
         retryable: response.status === 429 || response.status >= 500,
+        statusCode: response.status,
         retryAfterMs,
       });
     }

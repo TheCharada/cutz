@@ -7,6 +7,7 @@ import {
   completeNotificationJob,
   failNotificationJob,
   MessagingProviderError,
+  MessagingRecipientUnavailableError,
   notificationPayloadSchema,
   recoverNotificationJobLeases,
   retryNotificationJob,
@@ -214,6 +215,9 @@ async function processClaimedNotificationJob(
     result = await options.provider.send(
       {
         jobId: job.id,
+        barbershopId: job.barbershopId,
+        appointmentId: job.appointmentId,
+        waitlistEntryId: job.waitlistEntryId,
         type: parsed.data.type,
         toE164: job.phoneE164,
         timeZone: barbershop.timezone,
@@ -225,6 +229,16 @@ async function processClaimedNotificationJob(
   } catch (error) {
     if (options.providerSignal.aborted) {
       return { status: "abandoned" } as const;
+    }
+
+    if (error instanceof MessagingRecipientUnavailableError) {
+      const changed = await cancelNotificationJob(options.database, {
+        jobId: job.id,
+        processingStartedAt: job.processingStartedAt,
+        reason: "NO_AUTHORIZED_MESSAGING_RECIPIENT",
+        terminalPayload: redactTerminalNotificationPayload(job.payload),
+      });
+      return { status: changed ? "cancelled" : "lease-lost" } as const;
     }
 
     const failure = providerFailure(error);

@@ -3,6 +3,8 @@ import { getWorkerEnv } from "@/config/worker-env";
 import { getDb, getPool } from "@/infrastructure/db/client";
 import { logger } from "@/infrastructure/logging/logger";
 import { FakeMessagingProvider } from "@/infrastructure/messaging/fake-messaging-provider";
+import { TelegramMessagingProvider } from "@/infrastructure/messaging/telegram-messaging-provider";
+import { TelegramJobMessagingProvider } from "@/infrastructure/messaging/telegram-job-provider";
 import {
   WhatsAppMessagingProvider,
   type WhatsAppTemplateMap,
@@ -34,14 +36,19 @@ function renderFakeNotification(notification: OutboundNotification) {
   );
 }
 
-function requiredEnv(name: string, value: string | undefined) {
-  if (!value) throw new Error(`${name} is required when MESSAGING_PROVIDER=whatsapp`);
+function requiredEnv(name: string, value: string | undefined, provider = "whatsapp") {
+  if (!value) throw new Error(`${name} is required when MESSAGING_PROVIDER=${provider}`);
   return value;
 }
 
 function createMessagingProvider(env: ReturnType<typeof getWorkerEnv>): MessagingProvider {
   if (env.MESSAGING_PROVIDER === "fake") {
     return new FakeMessagingProvider(renderFakeNotification);
+  }
+
+  if (env.MESSAGING_PROVIDER === "telegram") {
+    const token = requiredEnv("TELEGRAM_BOT_TOKEN", env.TELEGRAM_BOT_TOKEN, "telegram");
+    return new TelegramJobMessagingProvider(getDb(), new TelegramMessagingProvider(token));
   }
 
   const templates: WhatsAppTemplateMap = {
