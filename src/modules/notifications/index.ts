@@ -6,6 +6,7 @@ export {
 } from "./notification-delivery.service";
 export {
   MessagingProviderError,
+  MessagingRecipientUnavailableError,
   type MessagingProvider,
   type MessagingSendResult,
   type OutboundNotification,
