@@ -177,7 +177,9 @@ describe("Telegram scoped worker delivery", () => {
       barbershopId: f.tenant.id, customerId: f.customer.id,
       chatId: "222", verifiedAt: now,
     });
-    const send = vi.fn().mockResolvedValue({ providerMessageId: "telegram:222:12" });
+    const send = vi.fn()
+      .mockResolvedValueOnce({ providerMessageId: "telegram:222:12" })
+      .mockResolvedValueOnce({ providerMessageId: "telegram:111:13" });
     await enqueue(f);
     await processNotificationBatch({
       database, clock, provider: new TelegramJobMessagingProvider(database, { send }),
