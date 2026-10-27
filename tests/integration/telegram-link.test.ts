@@ -15,6 +15,7 @@ import {
   waitlistEntries,
 } from "@/infrastructure/db/schema";
 import { createOpaqueToken, hashOpaqueToken } from "@/shared/tokens";
+import { describeTelegramResource } from "@/workflows/telegram-resource-summary";
 import {
   disableTelegramChat,
   issueTelegramLink,
@@ -164,6 +165,11 @@ describe("Telegram scoped links", () => {
     const token = new URL(issued.url).searchParams.get("start")!;
     expect(await redeemTelegramLink({ token, chatId: "123456" }, { database: db, now }))
       .toBe("linked");
+    const summary = await describeTelegramResource(token, "123456", db);
+    expect(summary).toContain("Agendamento confirmado");
+    expect(summary).toContain("01/11/2026");
+    expect(summary).not.toContain(fixture.appointmentToken);
+    expect(await describeTelegramResource(token, "987654", db)).toBeNull();
 
     expect(await verifyTelegramContact({
       chatId: "123456", telegramUserId: "123456",
