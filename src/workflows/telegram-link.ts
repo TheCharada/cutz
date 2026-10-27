@@ -159,7 +159,7 @@ export async function verifyTelegramContact(
   params: { chatId: string; telegramUserId: string; contactUserId: string; phoneNumber: string },
   options: { database?: Database; now?: Date } = {},
 ): Promise<"verified" | "invalid" | "mismatch"> {
-  if (!/^\\d{1,20}$/.test(params.chatId) ||
+  if (!/^\d{1,20}$/.test(params.chatId) ||
       params.telegramUserId !== params.chatId ||
       params.contactUserId !== params.chatId) return "invalid";
 
