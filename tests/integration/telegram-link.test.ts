@@ -19,6 +19,7 @@ import {
   disableTelegramChat,
   issueTelegramLink,
   redeemTelegramLink,
+  verifyTelegramContact,
 } from "@/workflows/telegram-link";
 
 const db = getDb();
@@ -154,6 +155,68 @@ describe("Telegram scoped links", () => {
     const links = await db.select().from(telegramChatLinks);
     expect(links).toHaveLength(2);
     expect(links.every(link => link.revokedAt !== null)).toBe(true);
+  });
+
+
+  it("verifies the customer's own Telegram contact before subscribing the tenant", async () => {
+    const issued = await issue(fixture.appointmentToken);
+    if (issued.status !== "ok") throw new Error("issue failed");
+    const token = new URL(issued.url).searchParams.get("start")!;
+    expect(await redeemTelegramLink({ token, chatId: "123456" }, { database: db, now }))
+      .toBe("linked");
+
+    expect(await verifyTelegramContact({
+      chatId: "123456", telegramUserId: "123456",
+      contactUserId: "999", phoneNumber: "+5511999990001",
+    }, { database: db, now })).toBe("invalid");
+    expect(await verifyTelegramContact({
+      chatId: "123456", telegramUserId: "123456",
+      contactUserId: "123456", phoneNumber: "+5511999999876",
+    }, { database: db, now })).toBe("mismatch");
+    expect(await db.select().from(telegramCustomerLinks)).toHaveLength(0);
+
+    expect(await verifyTelegramContact({
+      chatId: "123456", telegramUserId: "123456",
+      contactUserId: "123456", phoneNumber: "+5511999990001",
+    }, { database: db, now })).toBe("verified");
+    const links = await db.select().from(telegramCustomerLinks);
+    expect(links).toHaveLength(1);
+    expect(links[0]).toMatchObject({
+      barbershopId: fixture.tenant.id,
+      customerId: fixture.customer.id,
+      chatId: "123456",
+      revokedAt: null,
+    });
+    expect(await verifyTelegramContact({
+      chatId: "123456", telegramUserId: "123456",
+      contactUserId: "123456", phoneNumber: "+5511999990001",
+    }, { database: db, now })).toBe("invalid");
+    expect(await disableTelegramChat("123456", { database: db, now })).toBe(2);
+    const [revoked] = await db.select().from(telegramCustomerLinks);
+    expect(revoked.revokedAt).not.toBeNull();
+  });
+
+  it("expires the pending phone verification and isolates establishments", async () => {
+    const other = await createFixture();
+    try {
+      const issued = await issue(fixture.appointmentToken);
+      if (issued.status !== "ok") throw new Error("issue failed");
+      const token = new URL(issued.url).searchParams.get("start")!;
+      await redeemTelegramLink({ token, chatId: "456789" }, { database: db, now });
+      expect(await verifyTelegramContact({
+        chatId: "456789", telegramUserId: "456789",
+        contactUserId: "456789", phoneNumber: "+5511999990001",
+      }, { database: db, now: new Date(now.getTime() + 600001) })).toBe("invalid");
+      expect(await verifyTelegramContact({
+        chatId: "456789", telegramUserId: "456789",
+        contactUserId: "456789", phoneNumber: "+5511999990001",
+      }, { database: db, now })).toBe("verified");
+      const [link] = await db.select().from(telegramCustomerLinks);
+      expect(link.barbershopId).toBe(fixture.tenant.id);
+      expect(link.customerId).not.toBe(other.customer.id);
+    } finally {
+      await cleanup(other);
+    }
   });
 
   it("does not grant other resources access just because the phone is the same", async () => {
