@@ -9,6 +9,8 @@ import {
   services,
   staffMembers,
   telegramChatLinks,
+  telegramContactChallenges,
+  telegramCustomerLinks,
   telegramLinkTokens,
   waitlistEntries,
 } from "@/infrastructure/db/schema";
@@ -70,6 +72,8 @@ async function createFixture() {
 }
 
 async function cleanup(fixture: Fixture) {
+  await db.delete(telegramContactChallenges).where(eq(telegramContactChallenges.barbershopId, fixture.tenant.id));
+  await db.delete(telegramCustomerLinks).where(eq(telegramCustomerLinks.barbershopId, fixture.tenant.id));
   await db.delete(telegramLinkTokens).where(eq(telegramLinkTokens.barbershopId, fixture.tenant.id));
   await db.delete(telegramChatLinks).where(eq(telegramChatLinks.barbershopId, fixture.tenant.id));
   await db.delete(waitlistEntries).where(eq(waitlistEntries.barbershopId, fixture.tenant.id));
