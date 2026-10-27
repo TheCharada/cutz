@@ -10,6 +10,8 @@ import {
   services,
   staffMembers,
   telegramChatLinks,
+  telegramContactChallenges,
+  telegramCustomerLinks,
 } from "@/infrastructure/db/schema";
 import { TelegramJobMessagingProvider } from "@/infrastructure/messaging/telegram-job-provider";
 import { MessagingProviderError } from "@/modules/notifications";
@@ -58,6 +60,8 @@ async function createFixture() {
 
 async function cleanup(f: Fixture) {
   await database.delete(notificationJobs).where(eq(notificationJobs.barbershopId, f.tenant.id));
+  await database.delete(telegramContactChallenges).where(eq(telegramContactChallenges.barbershopId, f.tenant.id));
+  await database.delete(telegramCustomerLinks).where(eq(telegramCustomerLinks.barbershopId, f.tenant.id));
   await database.delete(telegramChatLinks).where(eq(telegramChatLinks.barbershopId, f.tenant.id));
   await database.delete(appointments).where(eq(appointments.barbershopId, f.tenant.id));
   await database.delete(customers).where(eq(customers.barbershopId, f.tenant.id));
