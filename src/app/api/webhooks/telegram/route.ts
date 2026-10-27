@@ -48,7 +48,12 @@ export async function POST(request: Request) {
       return botResponse(command.chatId, "As notificações do Cutz foram desativadas neste chat.");
     }
     if (command.action === "contact") {
-      const result = await verifyTelegramContact(command);
+      const result = await verifyTelegramContact({
+        chatId: command.chatId,
+        telegramUserId: command.telegramUserId,
+        contactUserId: command.contactUserId,
+        phoneNumber: command.phoneNumber,
+      });
       return botResponse(
         command.chatId,
         result === "verified"
