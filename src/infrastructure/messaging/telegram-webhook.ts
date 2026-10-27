@@ -54,6 +54,7 @@ export function parseTelegramWebhookCommand(rawBody: string): TelegramWebhookCom
     contactUserId: String(message.contact.user_id),
     phoneNumber: message.contact.phone_number,
   };
+  if (!message.text) return { action: "ignore" };
   const link = /^\/start ([A-Za-z0-9_-]{43})$/.exec(message.text);
   if (link) return { action: "link", token: link[1], chatId };
   return { action: "ignore" };
