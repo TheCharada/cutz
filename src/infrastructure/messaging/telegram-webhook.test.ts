@@ -49,6 +49,25 @@ describe("Telegram webhook validation", () => {
       .toEqual({ action: "ignore" });
   });
 
+  it("accepts contact only from the private Telegram account itself", () => {
+    const matching = { chat: { id: 1234567, type: "private" },
+      from: { id: 1234567 },
+      contact: { user_id: 1234567, phone_number: "+5511999990001" } };
+    expect(parseTelegramWebhookCommand(update(matching))).toEqual({
+      action: "contact", chatId: "1234567", telegramUserId: "1234567",
+      contactUserId: "1234567", phoneNumber: "+5511999990001",
+    });
+    expect(parseTelegramWebhookCommand(update({
+      ...matching, from: { id: 1234 },
+    }))).toEqual({ action: "ignore" });
+    expect(parseTelegramWebhookCommand(update({
+      ...matching, chat: { id: -10023, type: "group" },
+    }))).toEqual({ action: "ignore" });
+    expect(parseTelegramWebhookCommand(update({
+      ...matching, contact: { phone_number: "+5511999990001" },
+    }))).toEqual({ action: "ignore" });
+  });
+
   it("rejects invalid JSON and unsafe numeric chat identifiers", () => {
     expect(() => parseTelegramWebhookCommand("{broken-json")).toThrow();
     expect(() => parseTelegramWebhookCommand(update({

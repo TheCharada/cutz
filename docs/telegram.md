@@ -1,6 +1,6 @@
 # Telegram — vinculação e notificações
 
-O Cutz usa **um bot único** para enviar notificações de agendamentos e lista de espera. A associação ao Telegram é opcional e específica para cada agendamento ou entrada na lista de espera; não depende do número de telefone e não substitui a verificação de telefone por WhatsApp OTP.
+O Cutz usa **um bot único** para enviar notificações de agendamentos e lista de espera. A associação ao Telegram é opcional. O cliente pode vincular apenas um agendamento ou uma entrada na lista de espera; ao compartilhar **seu próprio contato pelo Telegram** e confirmar o número cadastrado, ativa também os avisos dos próximos agendamentos e listas daquele estabelecimento. A confirmação do Telegram não substitui a verificação de telefone por WhatsApp OTP usada para autenticação no site.
 
 A aplicação continua agnóstica de provedor de hospedagem. O webhook HTTPS deve ser acessível publicamente, e o worker precisa alcançar a Telegram Bot API.
 
@@ -70,8 +70,9 @@ unset BOT_TOKEN WEBHOOK_SECRET
 
 O endpoint verifica `X-Telegram-Bot-Api-Secret-Token` em tempo constante, limita o tamanho do JSON e aceita apenas comandos de chat privado:
 
-- `/start <token>`: consome o token uma única vez e associa o chat ao recurso autorizado.
-- `/stop`: revoga os vínculos daquele chat.
+- `/start <token>`: consome o token uma única vez, confirma os detalhes do registro e oferece um botão opcional para compartilhar o próprio número.
+- Contato enviado pelo botão: só ativa a assinatura do cliente se o contato pertencer à mesma conta Telegram e o telefone coincidir com o cadastro daquele estabelecimento.
+- `/stop`: revoga os vínculos desse chat, incluindo as assinaturas persistentes.
 - Outros comandos: ignorados.
 
 Para conferir o webhook, consulte `getWebhookInfo` usando um cliente protegido. Verifique `url`, `pending_update_count` e eventuais `last_error_message`. Um `401` no webhook indica segredo divergente; `503` indica webhook não configurado.
@@ -81,11 +82,12 @@ Para conferir o webhook, consulte `getWebhookInfo` usando um cliente protegido. 
 1. O cliente cria um agendamento ou entra na lista de espera normalmente.
 2. Se o Telegram estiver configurado, aparece o botão **Conectar Telegram** na confirmação e na página de gerenciamento.
 3. O botão emite um link `https://t.me/<bot>?start=<token>`. O token expira após dez minutos e só pode ser usado uma vez.
-4. O cliente abre o bot, toca **Iniciar** e recebe a confirmação no chat.
-5. Apenas as notificações **futuras** do recurso vinculado são enviadas ao chat; notificações anteriores não são reenviadas.
-6. O cliente pode enviar `/stop` para desativar as notificações daquele chat.
+4. O cliente abre o bot, toca **Iniciar** e recebe um resumo do agendamento ou da lista de espera imediatamente, mesmo se o job de confirmação já tiver sido processado.
+5. Para receber automaticamente os próximos avisos daquele estabelecimento, toca **Compartilhar meu telefone**. O bot compara o contato da própria conta com o telefone cadastrado; se não corresponder, o vínculo continua restrito ao recurso original.
+6. Após a verificação, **novos agendamentos, reagendamentos, lembretes e listas de espera do mesmo cliente e estabelecimento** passam a usar esse chat. Jobs antigos não são reenviados.
+7. O cliente pode enviar `/stop` para desativar os avisos daquele chat.
 
-Uma vinculação de agendamento não concede acesso às demais reservas do mesmo telefone. Se o cliente remarcar, o novo agendamento tem uma nova capability; poderá ser necessário vincular o Telegram novamente.
+Uma vinculação por agendamento **sem confirmação do contato** não concede acesso a outras reservas do mesmo telefone. A assinatura persistente exige que o Telegram forneça o contato da própria conta e que o número coincida com o cadastro. Uma assinatura confirmada é específica por cliente e estabelecimento; ao reagendar não é preciso vincular novamente. Compartilhar um contato de outra pessoa ou apenas digitar um número não autoriza a assinatura.
 
 ## 5. Verificar sem expor dados
 

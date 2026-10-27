@@ -10,6 +10,8 @@ import {
   services,
   staffMembers,
   telegramChatLinks,
+  telegramContactChallenges,
+  telegramCustomerLinks,
 } from "@/infrastructure/db/schema";
 import { TelegramJobMessagingProvider } from "@/infrastructure/messaging/telegram-job-provider";
 import { MessagingProviderError } from "@/modules/notifications";
@@ -58,6 +60,8 @@ async function createFixture() {
 
 async function cleanup(f: Fixture) {
   await database.delete(notificationJobs).where(eq(notificationJobs.barbershopId, f.tenant.id));
+  await database.delete(telegramContactChallenges).where(eq(telegramContactChallenges.barbershopId, f.tenant.id));
+  await database.delete(telegramCustomerLinks).where(eq(telegramCustomerLinks.barbershopId, f.tenant.id));
   await database.delete(telegramChatLinks).where(eq(telegramChatLinks.barbershopId, f.tenant.id));
   await database.delete(appointments).where(eq(appointments.barbershopId, f.tenant.id));
   await database.delete(customers).where(eq(customers.barbershopId, f.tenant.id));
@@ -132,6 +136,62 @@ describe("Telegram scoped worker delivery", () => {
     expect(completed.deliveryStatus).toBe("ACCEPTED");
     expect(completed.providerMessageId).toBe("telegram:123456789:88");
     expect(JSON.stringify(completed.payload)).not.toContain("secret-capability");
+  });
+
+
+  it("automatically sends a customer's future booking to their verified Telegram chat", async () => {
+    await database.insert(telegramCustomerLinks).values({
+      barbershopId: f.tenant.id, customerId: f.customer.id,
+      chatId: "654321", verifiedAt: now,
+    });
+    const [nextBooking] = await database.insert(appointments).values({
+      barbershopId: f.tenant.id, customerId: f.customer.id,
+      staffId: f.staff.id, serviceId: f.service.id,
+      startsAt: new Date(start.getTime() + 86400000),
+      endsAt: new Date(start.getTime() + 86400000 + 1800000),
+      managementTokenHash: `next-telegram-${randomUUID()}`,
+    }).returning();
+    const [job] = await database.insert(notificationJobs).values({
+      barbershopId: f.tenant.id, phoneE164: f.customer.phoneE164,
+      appointmentId: nextBooking.id, type: "APPOINTMENT_CREATED",
+      dedupeKey: `telegram-subscription:${randomUUID()}`, scheduledAt: now,
+      payload: {
+        type: "APPOINTMENT_CREATED", appointmentId: nextBooking.id,
+        customerName: f.customer.name, serviceName: f.service.name, staffName: f.staff.name,
+        startsAt: nextBooking.startsAt.toISOString(),
+        managementUrl: "https://app.example.test/a/next-booking-secret",
+      },
+    }).returning();
+    const send = vi.fn().mockResolvedValue({ providerMessageId: "telegram:654321:99" });
+    const result = await processNotificationBatch({
+      database, clock, provider: new TelegramJobMessagingProvider(database, { send }),
+    });
+    expect(result.results).toEqual([{ status: "sent" }]);
+    expect(send.mock.calls[0][0].chatId).toBe("654321");
+    expect((await jobStatus(job.id)).status).toBe("SENT");
+  });
+
+  it("prefers a verified subscription, then falls back to an existing scoped link", async () => {
+    await link(f, "111");
+    await database.insert(telegramCustomerLinks).values({
+      barbershopId: f.tenant.id, customerId: f.customer.id,
+      chatId: "222", verifiedAt: now,
+    });
+    const send = vi.fn()
+      .mockResolvedValueOnce({ providerMessageId: "telegram:222:12" })
+      .mockResolvedValueOnce({ providerMessageId: "telegram:111:13" });
+    await enqueue(f);
+    await processNotificationBatch({
+      database, clock, provider: new TelegramJobMessagingProvider(database, { send }),
+    });
+    expect(send.mock.calls[0][0].chatId).toBe("222");
+    await database.update(telegramCustomerLinks).set({ revokedAt: now })
+      .where(eq(telegramCustomerLinks.barbershopId, f.tenant.id));
+    await enqueue(f);
+    await processNotificationBatch({
+      database, clock, provider: new TelegramJobMessagingProvider(database, { send }),
+    });
+    expect(send.mock.calls[1][0].chatId).toBe("111");
   });
 
   it("cancels unlinked recipients without retrying or disclosing capabilities", async () => {
