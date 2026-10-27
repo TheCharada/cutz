@@ -13,12 +13,17 @@ const telegramUpdateSchema = z.object({
       is_bot: z.boolean().optional(),
     }).passthrough().optional(),
     text: z.string().max(256).optional(),
+    contact: z.object({
+      phone_number: z.string().max(32),
+      user_id: z.number().int().refine(Number.isSafeInteger).optional(),
+    }).passthrough().optional(),
   }).passthrough().optional(),
 }).passthrough();
 
 export type TelegramWebhookCommand =
   | { action: "link"; token: string; chatId: string }
   | { action: "stop"; chatId: string }
+  | { action: "contact"; chatId: string; telegramUserId: string; contactUserId: string; phoneNumber: string }
   | { action: "ignore" };
 
 export function verifyTelegramWebhookSecret(received: string | null, expected: string) {
@@ -36,13 +41,19 @@ export function parseTelegramWebhookCommand(rawBody: string): TelegramWebhookCom
     message.chat.type !== "private" ||
     message.from?.is_bot ||
     message.from?.id !== message.chat.id ||
-    message.chat.id <= 0 ||
-    !message.text
+    message.chat.id <= 0
   ) {
     return { action: "ignore" };
   }
   const chatId = String(message.chat.id);
   if (message.text === "/stop") return { action: "stop", chatId };
+  if (message.contact?.user_id !== undefined) return {
+    action: "contact",
+    chatId,
+    telegramUserId: String(message.from.id),
+    contactUserId: String(message.contact.user_id),
+    phoneNumber: message.contact.phone_number,
+  };
   const link = /^\/start ([A-Za-z0-9_-]{43})$/.exec(message.text);
   if (link) return { action: "link", token: link[1], chatId };
   return { action: "ignore" };
