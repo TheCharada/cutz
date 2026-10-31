@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { resolveServerAdminAccess } from "@/app/admin/_lib/server-auth";
 import { PageShell } from "@/components/cutz/page-shell";
 import { listAdminCatalog } from "@/workflows/admin-catalog";
+import { catalogImageUrl } from "@/modules/catalog/image-url";
 import { ServiceManager } from "./service-manager";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -24,6 +25,7 @@ export default async function AdminServicesPage({ params }: PageProps) {
     durationMinutes: service.durationMinutes,
     priceCents: service.priceCents,
     active: service.active,
+    imageUrl: catalogImageUrl(slug, "services", service.id, service.imageKey),
   }));
 
   return (

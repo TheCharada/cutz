@@ -3,11 +3,13 @@ export type PublicService = {
   name: string;
   durationMinutes: number;
   priceCents: number | null;
+  imageUrl: string | null;
 };
 
 export type PublicStaffMember = {
   id: string;
   name: string;
+  imageUrl: string | null;
 };
 
 export type CatalogTimeBlock = {

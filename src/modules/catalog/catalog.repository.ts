@@ -170,6 +170,7 @@ export function listActiveServices(executor: DbExecutor, barbershopId: string) {
       name: services.name,
       durationMinutes: services.durationMinutes,
       priceCents: services.priceCents,
+      imageKey: services.imageKey,
     })
     .from(services)
     .where(and(eq(services.barbershopId, barbershopId), eq(services.active, true)))
@@ -181,6 +182,7 @@ export function listActiveBookableStaff(executor: DbExecutor, barbershopId: stri
     .select({
       id: staffMembers.id,
       name: staffMembers.name,
+      imageKey: staffMembers.imageKey,
     })
     .from(staffMembers)
     .where(

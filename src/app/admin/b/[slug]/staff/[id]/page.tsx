@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { resolveServerAdminAccess } from "@/app/admin/_lib/server-auth";
 import { PageShell } from "@/components/cutz/page-shell";
 import { getStaffAdminConfiguration, listAdminCatalog } from "@/workflows/admin-catalog";
+import { catalogImageUrl } from "@/modules/catalog/image-url";
 import { StaffEditor } from "./staff-editor";
 
 type PageProps = { params: Promise<{ slug: string; id: string }> };
@@ -31,6 +32,7 @@ export default async function AdminStaffDetailPage({ params }: PageProps) {
     name: configuration.staff.name,
     active: configuration.staff.active,
     acceptsAppointments: configuration.staff.acceptsAppointments,
+    imageUrl: catalogImageUrl(slug, "staff", configuration.staff.id, configuration.staff.imageKey),
   };
   const services = catalog.services.map((service) => ({
     id: service.id,
