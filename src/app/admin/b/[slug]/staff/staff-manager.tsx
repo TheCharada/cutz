@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CatalogPhoto } from "@/components/cutz/catalog-photo";
 
 type Staff = {
   id: string;
@@ -16,6 +17,7 @@ type Staff = {
   active: boolean;
   acceptsAppointments: boolean;
   userId: string | null;
+  imageUrl: string | null;
 };
 type ApiError = { error?: { message?: string } };
 
@@ -103,7 +105,8 @@ export function StaffManager({ slug, staff }: { slug: string; staff: Staff[] }) 
               <Card key={member.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
+                    <CatalogPhoto name={member.name} src={member.imageUrl} className="size-14" />
+                    <div className="min-w-0 flex-1">
                       <h4 className="truncate font-semibold text-foreground">{member.name}</h4>
                       <p className="mt-1 text-sm text-muted-foreground">{member.userId ? "Login administrativo vinculado" : "Sem login vinculado"}</p>
                     </div>

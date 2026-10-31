@@ -1,9 +1,9 @@
 import type { Locator } from "@playwright/test";
 
-export async function chooseService(select: Locator, name: string) {
-  const value = await select.locator("option").filter({
-    hasText: `${name} · `,
-  }).first().getAttribute("value");
-  if (!value) throw new Error(`Serviço "${name}" não encontrado`);
-  await select.selectOption(value);
+export async function chooseService(container: Locator, name: string) {
+  await container.getByRole("radio", { name, exact: true }).check();
+}
+
+export async function chooseStaff(container: Locator, name: string) {
+  await container.getByRole("radio", { name, exact: true }).check();
 }

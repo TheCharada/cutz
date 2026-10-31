@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import type { PublicService, PublicStaffMember } from "@/modules/catalog";
 import type { PublicAvailabilitySlot } from "@/modules/scheduling";
 import { formatPriceCents } from "@/shared/money";
+import { ServiceChoices, StaffChoices } from "@/components/cutz/catalog-choices";
 import type { RememberedCustomer } from "./customer-session-types";
 import type { BookingIntent } from "./booking-intent";
 import { OtpVerification, type PublicOtpChallenge } from "./otp-verification";
@@ -36,9 +37,6 @@ type SessionStartResponse = {
   expiresAt?: string;
   customer?: RememberedCustomer;
 };
-
-const selectClassName =
-  "h-10 w-full rounded-xl border border-input bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/35 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-70";
 
 function localSlotLabel(iso: string, timezone: string) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -334,42 +332,22 @@ export function BookingFlow({
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">Defina o serviço, quem vai atender e a data para consultar a agenda.</p>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="booking-service">Serviço</Label>
-              <select
-                id="booking-service"
-                className={selectClassName}
-                value={serviceId}
-                disabled={loadingSlots || submitting}
-                onChange={(event) => {
-                  setServiceId(event.target.value);
-                  invalidateAvailability();
-                }}
-              >
-                {services.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.name} · {service.durationMinutes} min · {formatPriceCents(service.priceCents)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="booking-staff">Profissional</Label>
-              <select
-                id="booking-staff"
-                className={selectClassName}
-                value={staffId}
-                disabled={loadingSlots || submitting}
-                onChange={(event) => {
-                  setStaffId(event.target.value);
-                  invalidateAvailability();
-                }}
-              >
-                {staff.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-              </select>
-            </div>
-            <div className="space-y-2">
+          <div className="mt-5 space-y-5">
+            <ServiceChoices
+              name="booking-service"
+              services={services}
+              value={serviceId}
+              disabled={loadingSlots || submitting}
+              onChange={(id) => { setServiceId(id); invalidateAvailability(); }}
+            />
+            <StaffChoices
+              name="booking-staff"
+              staff={staff}
+              value={staffId}
+              disabled={loadingSlots || submitting}
+              onChange={(id) => { setStaffId(id); invalidateAvailability(); }}
+            />
+            <div className="max-w-xs space-y-2">
               <Label htmlFor="booking-date">Data</Label>
               <Input
                 id="booking-date"

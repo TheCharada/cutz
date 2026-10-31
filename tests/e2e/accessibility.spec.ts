@@ -1,4 +1,4 @@
-import { chooseService } from "./helpers/choose-service";
+import { chooseService, chooseStaff } from "./helpers/choose-service";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -49,8 +49,8 @@ async function login(page: Page) {
 async function createBooking(page: Page, phone: string) {
   await page.goto("/b/demo");
   const slotSection = page.getByRole("heading", { name: "1. Escolha o horário" }).locator("..");
-  await chooseService(slotSection.getByLabel("Serviço"), "Corte");
-  await slotSection.getByLabel("Profissional").selectOption({ label: "Profissional Exemplo" });
+  await chooseService(slotSection, "Corte");
+  await chooseStaff(slotSection, "Profissional Exemplo");
   await slotSection.getByLabel("Data").fill(nextWeekday(1, demoTimezone));
   await slotSection.getByRole("button", { name: "Buscar horários" }).click();
   const firstSlot = slotSection.getByRole("button", { name: /Selecionar horário/ }).first();
@@ -101,8 +101,8 @@ test("login, agenda e clientes não possuem violações automatizadas de acessib
 test("fluxo público permite ativar ações principais pelo teclado", async ({ page }) => {
   await page.goto("/b/demo");
   const slotSection = page.getByRole("heading", { name: "1. Escolha o horário" }).locator("..");
-  await chooseService(slotSection.getByLabel("Serviço"), "Corte");
-  await slotSection.getByLabel("Profissional").selectOption({ label: "Profissional Exemplo" });
+  await chooseService(slotSection, "Corte");
+  await chooseStaff(slotSection, "Profissional Exemplo");
   await slotSection.getByLabel("Data").fill(nextWeekday(1, demoTimezone));
 
   const search = slotSection.getByRole("button", { name: "Buscar horários" });

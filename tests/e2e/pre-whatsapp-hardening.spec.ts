@@ -1,4 +1,4 @@
-import { chooseService } from "./helpers/choose-service";
+import { chooseService, chooseStaff } from "./helpers/choose-service";
 import { expect, test, type Page } from "@playwright/test";
 
 const demoTimezone = "America/Sao_Paulo";
@@ -30,8 +30,8 @@ function nextWeekday(targetDay: number, timeZone: string) {
 
 async function selectFirstSlot(page: Page) {
   const slotSection = page.getByRole("heading", { name: "1. Escolha o horário" }).locator("..");
-  await chooseService(slotSection.getByLabel("Serviço"), "Corte");
-  await slotSection.getByLabel("Profissional").selectOption({ label: "Profissional Exemplo" });
+  await chooseService(slotSection, "Corte");
+  await chooseStaff(slotSection, "Profissional Exemplo");
   await slotSection.getByLabel("Data").fill(nextWeekday(1, demoTimezone));
   await slotSection.getByRole("button", { name: "Buscar horários" }).click();
   const firstSlot = slotSection.getByRole("button", { name: /Selecionar horário/ }).first();
