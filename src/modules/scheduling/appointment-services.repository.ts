@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type { DbExecutor } from "@/infrastructure/db/executor";
 import { appointmentServices, services } from "@/infrastructure/db/schema";
 
@@ -55,6 +55,25 @@ export function listAppointmentServiceRecords(
     eq(appointmentServices.barbershopId, barbershopId),
     eq(appointmentServices.appointmentId, appointmentId),
   )).orderBy(asc(appointmentServices.createdAt), asc(appointmentServices.id));
+}
+
+export async function listBookedServiceRecords(
+  executor: DbExecutor,
+  barbershopId: string,
+  appointmentIds: string[],
+) {
+  if (appointmentIds.length === 0) return [];
+  return executor.select({
+    appointmentId: appointmentServices.appointmentId,
+    serviceNameSnapshot: appointmentServices.serviceNameSnapshot,
+    durationMinutesSnapshot: appointmentServices.durationMinutesSnapshot,
+    unitPriceCents: appointmentServices.unitPriceCents,
+    historicalSnapshotComplete: appointmentServices.historicalSnapshotComplete,
+  }).from(appointmentServices).where(and(
+    eq(appointmentServices.barbershopId, barbershopId),
+    inArray(appointmentServices.appointmentId, appointmentIds),
+    eq(appointmentServices.kind, "BOOKED"),
+  ));
 }
 
 export async function getBookedServiceRecord(
