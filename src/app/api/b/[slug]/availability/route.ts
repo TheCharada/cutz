@@ -8,7 +8,7 @@ import {
 import { isValidLocalDate } from "@/shared/time";
 import { getPublicAvailabilityForBarbershop } from "@/workflows/public-catalog";
 
-const timeSchema = z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/, "Horário local inválido");
+const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Horário local inválido");
 
 const querySchema = z.object({
   serviceId: z.string().uuid(),
