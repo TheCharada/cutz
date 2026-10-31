@@ -308,7 +308,7 @@ export async function cancelAppointmentByCapability(
       cancellationKind: "CANCELLATION",
       cancellationReason: params.reason?.trim() || undefined,
     });
-    if (!cancelled) throw new Error("Locked scheduled Appointment could not be cancelled");
+    if (!cancelled) return { status: "terminal-conflict" as const };
 
     await cancelPendingAppointmentReminder(tx, {
       barbershopId: appointment.barbershopId,
@@ -407,7 +407,7 @@ export async function rescheduleAppointmentByCapability(
         cancellationKind: "RESCHEDULED",
       });
       if (!cancelled) {
-        throw new Error("Locked scheduled Appointment could not be marked as rescheduled");
+        return { status: "appointment-conflict" as const };
       }
       await cancelPendingAppointmentReminder(tx, {
         barbershopId: availability.barbershop.id,
