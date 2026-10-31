@@ -1,4 +1,4 @@
-import { chooseService } from "./helpers/choose-service";
+import { chooseService, chooseStaff } from "./helpers/choose-service";
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
 const botUsername = process.env.TELEGRAM_BOT_USERNAME;
@@ -40,8 +40,8 @@ test("optional Telegram linking survives booking, waitlist and stop", async ({ p
 
   await page.goto("/b/demo");
   const booking = page.getByRole("heading", { name: "1. Escolha o horário" }).locator("..");
-  await chooseService(booking.getByLabel("Serviço"), "Corte");
-  await booking.getByLabel("Profissional").selectOption({ label: "Profissional Exemplo" });
+  await chooseService(booking, "Corte");
+  await chooseStaff(booking, "Profissional Exemplo");
   await booking.getByLabel("Data").fill(date);
   await booking.getByRole("button", { name: "Buscar horários" }).click();
   const slot = booking.getByRole("button", { name: /Selecionar horário/ }).first();
@@ -69,7 +69,7 @@ test("optional Telegram linking survives booking, waitlist and stop", async ({ p
 
   await page.goto("/b/demo");
   const waitlist = page.getByRole("heading", { name: "Lista de espera", exact: true }).locator("..");
-  await chooseService(waitlist.getByLabel("Serviço"), "Corte");
+  await chooseService(waitlist, "Corte");
   await waitlist.getByLabel("Data desejada").fill(date);
   await waitlist.getByLabel("A partir de").fill("08:00");
   await waitlist.getByLabel("Até").fill("18:00");

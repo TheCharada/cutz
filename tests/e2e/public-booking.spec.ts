@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { chooseService } from "./helpers/choose-service";
+import { chooseService, chooseStaff } from "./helpers/choose-service";
 
 const demoTimezone = "America/Sao_Paulo";
 
@@ -37,9 +37,9 @@ test("cliente conclui booking público em verification_mode=NONE", async ({ page
 
   await expect(page.getByRole("heading", { name: "Agendar horário" })).toBeVisible();
   const slotSection = page.getByRole("heading", { name: "1. Escolha o horário" }).locator("..");
-  await chooseService(slotSection.getByLabel("Serviço"), "Corte");
+  await chooseService(slotSection, "Corte");
   await expect(slotSection.getByText(/Valor do serviço: R\$\s*35,00/)).toBeVisible();
-  await slotSection.getByLabel("Profissional").selectOption({ label: "Profissional Exemplo" });
+  await chooseStaff(slotSection, "Profissional Exemplo");
   await slotSection.getByLabel("Data").fill(nextWeekday(1, demoTimezone));
   await slotSection.getByRole("button", { name: "Buscar horários" }).click();
 
