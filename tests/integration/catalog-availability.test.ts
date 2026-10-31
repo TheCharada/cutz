@@ -202,6 +202,64 @@ describe("public catalog and availability", () => {
     expect(result.slots).toHaveLength(4);
   });
 
+  it("only suggests slots whose full duration fits inside the requested local window", async () => {
+    const first = await getPublicAvailabilityForBarbershop({
+      slug: fixture.tenant.slug,
+      serviceId: fixture.service.id,
+      date: "2026-09-07",
+      earliestTime: "08:30",
+      latestTime: "09:00",
+    }, { executor: db, clock });
+    expect(first.status).toBe("ok");
+    if (first.status !== "ok") throw new Error("Expected bookable slots");
+    expect(first.slots.map((slot) => [slot.startsAt, slot.endsAt])).toEqual([
+      ["2026-09-07T11:30:00.000Z", "2026-09-07T12:00:00.000Z"],
+    ]);
+
+    const tooShort = await getPublicAvailabilityForBarbershop({
+      slug: fixture.tenant.slug,
+      serviceId: fixture.service.id,
+      date: "2026-09-07",
+      earliestTime: "08:00",
+      latestTime: "08:29",
+    }, { executor: db, clock });
+    expect(tooShort.status).toBe("ok");
+    if (tooShort.status !== "ok") throw new Error("Expected availability response");
+    expect(tooShort.slots).toEqual([]);
+  });
+
+  it("keeps the optional staff restriction and normal availability blockers", async () => {
+    const [customer] = await db.insert(customers).values({
+      barbershopId: fixture.tenant.id,
+      name: "Customer",
+      phoneE164: `+5514${Date.now().toString().slice(-8)}`,
+    }).returning();
+    await db.insert(appointments).values({
+      barbershopId: fixture.tenant.id,
+      customerId: customer.id,
+      staffId: fixture.eligibleStaff.id,
+      serviceId: fixture.service.id,
+      startsAt: new Date("2026-09-07T11:30:00.000Z"),
+      endsAt: new Date("2026-09-07T12:00:00.000Z"),
+      status: "SCHEDULED",
+      managementTokenHash: randomUUID(),
+    });
+
+    const result = await getPublicAvailabilityForBarbershop({
+      slug: fixture.tenant.slug,
+      serviceId: fixture.service.id,
+      staffId: fixture.eligibleStaff.id,
+      date: "2026-09-07",
+      earliestTime: "08:00",
+      latestTime: "09:00",
+    }, { executor: db, clock });
+
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") throw new Error("Expected availability response");
+    expect(result.slots.map((slot) => slot.startsAt)).toEqual(["2026-09-07T11:00:00.000Z"]);
+    expect(result.slots.every((slot) => slot.staffId === fixture.eligibleStaff.id)).toBe(true);
+  });
+
   it("does not expose availability for inactive or cross-tenant services", async () => {
     const inactive = await getPublicAvailabilityForBarbershop(
       {
