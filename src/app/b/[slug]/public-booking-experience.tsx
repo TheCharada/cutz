@@ -32,7 +32,11 @@ export function PublicBookingExperience({
   function selectAvailableSlot(slot: Omit<BookingIntent, "requestId">) {
     nextRequestId.current += 1;
     setBookingIntent({ ...slot, requestId: nextRequestId.current });
-    requestAnimationFrame(() => document.getElementById("booking-flow")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    requestAnimationFrame(() => {
+      const booking = document.getElementById("booking-flow");
+      booking?.focus({ preventScroll: true });
+      booking?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   async function switchCustomer() {
@@ -48,7 +52,7 @@ export function PublicBookingExperience({
 
   return (
     <div className="space-y-10">
-      <section id="booking-flow" className="scroll-mt-6" aria-label="Agendamento">
+      <section id="booking-flow" tabIndex={-1} className="scroll-mt-6 outline-none" aria-label="Agendamento">
         <BookingFlow
           key={bookingIntent?.requestId ?? "default"}
           bookingIntent={bookingIntent}
