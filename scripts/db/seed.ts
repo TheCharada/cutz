@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getDb, getPool, type Database } from "@/infrastructure/db/client";
 import {
   appointments,
+  appointmentServices,
   barbershopMemberships,
   barbershops,
   customers,
@@ -81,7 +82,7 @@ async function upsertSeedAppointment(
 ) {
   const endsAt = new Date(params.startsAt.getTime() + 30 * 60_000);
   const managementTokenHash = hashOpaqueToken(params.token);
-  await db
+  const [appointment] = await db
     .insert(appointments)
     .values({
       barbershopId: params.barbershopId,
@@ -108,7 +109,25 @@ async function upsertSeedAppointment(
         rescheduledFromId: null,
         updatedAt: params.now,
       },
-    });
+    })
+    .returning({ id: appointments.id });
+
+  const [service] = await db.select({
+    name: services.name,
+    durationMinutes: services.durationMinutes,
+    priceCents: services.priceCents,
+  }).from(services).where(eq(services.id, params.serviceId)).limit(1);
+  if (!service) throw new Error("Seed appointment service missing");
+  await db.insert(appointmentServices).values({
+    barbershopId: params.barbershopId,
+    appointmentId: appointment.id,
+    serviceId: params.serviceId,
+    kind: "BOOKED",
+    serviceNameSnapshot: service.name,
+    durationMinutesSnapshot: service.durationMinutes,
+    unitPriceCents: service.priceCents,
+    historicalSnapshotComplete: true,
+  }).onConflictDoNothing();
 }
 
 export async function seedDatabase(options: SeedOptions = {}) {

@@ -20,6 +20,7 @@ import {
 } from "@/modules/notifications";
 import {
   cancelScheduledAppointmentInTransaction,
+  getBookedServiceRecord,
   createAppointmentInTransaction,
   finishScheduledAppointmentInTransaction,
   getAppointmentById,
@@ -151,7 +152,7 @@ export async function cancelAdminAppointment(params: { barbershop: BarbershopCon
     if (appointment.status === "CANCELLED") return { status: "ok" as const, changed: false, appointment };
     if (appointment.status !== "SCHEDULED") return { status: "appointment-conflict" as const };
     const snapshots = await appointmentSnapshots(tx, appointment);
-    const cancelled = await cancelScheduledAppointmentInTransaction(tx, { appointmentId: appointment.id, cancelledAt: now, cancelledBy: "STAFF", cancellationKind: "CANCELLATION", cancellationReason: params.reason?.trim() || undefined });
+    const cancelled = await cancelScheduledAppointmentInTransaction(tx, { barbershopId: params.barbershop.id, appointmentId: appointment.id, cancelledAt: now, cancelledBy: "STAFF", cancellationKind: "CANCELLATION", cancellationReason: params.reason?.trim() || undefined });
     if (!cancelled) return { status: "appointment-conflict" as const };
     await cancelPendingAppointmentReminder(tx, { barbershopId: params.barbershop.id, appointmentId: appointment.id });
     await enqueueAppointmentCancelledNotification(tx, { barbershopId: params.barbershop.id, appointmentId: appointment.id, phoneE164: snapshots.customer.phoneE164, now, payload: { type: "APPOINTMENT_CANCELLED", appointmentId: appointment.id, customerName: snapshots.customer.name, serviceName: snapshots.service.name, staffName: snapshots.staff.name, startsAt: appointment.startsAt.toISOString(), ...(params.reason?.trim() ? { reason: params.reason.trim() } : {}) } });
@@ -190,11 +191,12 @@ export async function rescheduleAdminAppointment(params: { barbershop: Barbersho
       const snapshots = await appointmentSnapshots(tx, oldAppointment);
       const targetStaff = await getStaffSnapshot(tx, params.barbershop.id, params.staffId);
       if (!targetStaff) return { status: "appointment-conflict" as const };
-      const cancelled = await cancelScheduledAppointmentInTransaction(tx, { appointmentId: oldAppointment.id, cancelledAt: now, cancelledBy: "STAFF", cancellationKind: "RESCHEDULED" });
+      const booked = await getBookedServiceRecord(tx, params.barbershop.id, oldAppointment.id);
+      const cancelled = await cancelScheduledAppointmentInTransaction(tx, { barbershopId: params.barbershop.id, appointmentId: oldAppointment.id, cancelledAt: now, cancelledBy: "STAFF", cancellationKind: "RESCHEDULED" });
       if (!cancelled) return { status: "appointment-conflict" as const };
       await cancelPendingAppointmentReminder(tx, { barbershopId: params.barbershop.id, appointmentId: oldAppointment.id });
       const token = (options.createManagementToken ?? createOpaqueToken)();
-      const appointment = await createAppointmentInTransaction(tx, { barbershopId: params.barbershop.id, customerId: oldAppointment.customerId, staffId: params.staffId, serviceId: oldAppointment.serviceId, startsAt: params.startsAt, endsAt: new Date(slot.endsAt), managementTokenHash: hashOpaqueToken(token), rescheduledFromId: oldAppointment.id });
+      const appointment = await createAppointmentInTransaction(tx, { barbershopId: params.barbershop.id, customerId: oldAppointment.customerId, staffId: params.staffId, serviceId: oldAppointment.serviceId, startsAt: params.startsAt, endsAt: new Date(slot.endsAt), managementTokenHash: hashOpaqueToken(token), rescheduledFromId: oldAppointment.id, bookedSnapshot: booked ? { serviceNameSnapshot: booked.serviceNameSnapshot, durationMinutesSnapshot: booked.durationMinutesSnapshot, unitPriceCents: booked.unitPriceCents, historicalSnapshotComplete: booked.historicalSnapshotComplete } : undefined });
       const managementUrl = `${appOrigin.replace(/\/$/, "")}/a/${token}`;
       await enqueueAppointmentRescheduledNotifications(tx, { barbershopId: params.barbershop.id, appointmentId: appointment.id, phoneE164: snapshots.customer.phoneE164, now, startsAt: appointment.startsAt, reminderOffsetMinutes: params.barbershop.reminderOffsetMinutes, rescheduledPayload: { type: "APPOINTMENT_RESCHEDULED", appointmentId: appointment.id, previousAppointmentId: oldAppointment.id, customerName: snapshots.customer.name, serviceName: snapshots.service.name, staffName: targetStaff.name, startsAt: appointment.startsAt.toISOString(), managementUrl }, reminderPayload: { type: "APPOINTMENT_REMINDER", appointmentId: appointment.id, customerName: snapshots.customer.name, serviceName: snapshots.service.name, staffName: targetStaff.name, startsAt: appointment.startsAt.toISOString() } });
       let waitlist: unknown = { status: "no-candidate" as const };

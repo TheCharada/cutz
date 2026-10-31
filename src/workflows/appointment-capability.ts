@@ -17,6 +17,7 @@ import {
 } from "@/modules/notifications";
 import {
   cancelScheduledAppointmentInTransaction,
+  getBookedServiceRecord,
   createAppointmentInTransaction,
   getAppointmentByManagementTokenHash,
   getAvailability,
@@ -300,13 +301,14 @@ export async function cancelAppointmentByCapability(
     if (appointment.status !== "SCHEDULED") return { status: "terminal-conflict" as const };
 
     const cancelled = await cancelScheduledAppointmentInTransaction(tx, {
+      barbershopId: visible.barbershopId,
       appointmentId: appointment.id,
       cancelledAt: now,
       cancelledBy: "CUSTOMER",
       cancellationKind: "CANCELLATION",
       cancellationReason: params.reason?.trim() || undefined,
     });
-    if (!cancelled) throw new Error("Locked scheduled Appointment could not be cancelled");
+    if (!cancelled) return { status: "terminal-conflict" as const };
 
     await cancelPendingAppointmentReminder(tx, {
       barbershopId: appointment.barbershopId,
@@ -396,14 +398,16 @@ export async function rescheduleAppointmentByCapability(
       );
       if (!customer) return { status: "appointment-conflict" as const };
 
+      const booked = await getBookedServiceRecord(tx, oldAppointment.barbershopId, oldAppointment.id);
       const cancelled = await cancelScheduledAppointmentInTransaction(tx, {
+        barbershopId: oldAppointment.barbershopId,
         appointmentId: oldAppointment.id,
         cancelledAt: now,
         cancelledBy: "CUSTOMER",
         cancellationKind: "RESCHEDULED",
       });
       if (!cancelled) {
-        throw new Error("Locked scheduled Appointment could not be marked as rescheduled");
+        return { status: "appointment-conflict" as const };
       }
       await cancelPendingAppointmentReminder(tx, {
         barbershopId: availability.barbershop.id,
@@ -420,6 +424,7 @@ export async function rescheduleAppointmentByCapability(
         endsAt: new Date(slot.endsAt),
         managementTokenHash: hashOpaqueToken(managementToken),
         rescheduledFromId: oldAppointment.id,
+        bookedSnapshot: booked ? { serviceNameSnapshot: booked.serviceNameSnapshot, durationMinutesSnapshot: booked.durationMinutesSnapshot, unitPriceCents: booked.unitPriceCents, historicalSnapshotComplete: booked.historicalSnapshotComplete } : undefined,
       });
       const managementUrl = `${appOrigin.replace(/\/$/, "")}/a/${managementToken}`;
 

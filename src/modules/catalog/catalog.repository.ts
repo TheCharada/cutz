@@ -36,6 +36,7 @@ export async function findServiceById(
       id: services.id,
       name: services.name,
       durationMinutes: services.durationMinutes,
+      priceCents: services.priceCents,
       active: services.active,
     })
     .from(services)

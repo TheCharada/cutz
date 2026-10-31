@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, gt, inArray, lt, ne, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/infrastructure/db/executor";
 import { appointments } from "@/infrastructure/db/schema";
+import { insertBookedService, type BookedServiceSnapshot } from "./appointment-services.repository";
 
 const appointmentSelection = {
   id: appointments.id,
@@ -85,8 +86,15 @@ export async function findScheduledAppointmentBlocks(executor: DbExecutor, param
   return executor.select({ staffId: appointments.staffId, startsAt: appointments.startsAt, endsAt: appointments.endsAt }).from(appointments).where(and(...conditions)).orderBy(asc(appointments.staffId), asc(appointments.startsAt));
 }
 
-export async function insertScheduledAppointment(executor: DbExecutor, params: { barbershopId: string; customerId: string; staffId: string; serviceId: string; startsAt: Date; endsAt: Date; managementTokenHash: string; rescheduledFromId?: string }) {
-  const [row] = await executor.insert(appointments).values(params).returning(appointmentSelection);
+export async function insertScheduledAppointment(executor: DbExecutor, params: { barbershopId: string; customerId: string; staffId: string; serviceId: string; startsAt: Date; endsAt: Date; managementTokenHash: string; rescheduledFromId?: string; bookedSnapshot?: BookedServiceSnapshot }) {
+  const { bookedSnapshot, ...details } = params;
+  const [row] = await executor.insert(appointments).values(details).returning(appointmentSelection);
+  await insertBookedService(executor, {
+    barbershopId: row.barbershopId,
+    appointmentId: row.id,
+    serviceId: row.serviceId,
+    snapshot: bookedSnapshot,
+  });
   return row;
 }
 
