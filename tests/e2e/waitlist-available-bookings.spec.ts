@@ -73,7 +73,6 @@ test("lets the customer join the waitlist even when a bookable slot exists", asy
   const date = nextMonday();
   const slot = await firstAvailableSlot(request, serviceId, date);
 
-
   await waitlist.getByLabel("Data desejada").fill(date);
   await waitlist.getByLabel("A partir de").fill(localTime(slot.startsAt));
   await waitlist.getByLabel("Até").fill(localTime(slot.endsAt));
