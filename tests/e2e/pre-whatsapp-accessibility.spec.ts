@@ -1,3 +1,4 @@
+import { chooseService } from "./helpers/choose-service";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -30,7 +31,7 @@ async function expectNoA11yViolations(page: Page) {
 async function createBooking(page: Page) {
   await page.goto("/b/demo");
   const slotSection = page.getByRole("heading", { name: "1. Escolha o horário" }).locator("..");
-  await slotSection.getByLabel("Serviço").selectOption({ label: "Corte" });
+  await chooseService(slotSection.getByLabel("Serviço"), "Corte");
   await slotSection.getByLabel("Profissional").selectOption({ label: "Profissional Exemplo" });
   await slotSection.getByLabel("Data").fill(nextMonday(demoTimezone));
   await slotSection.getByRole("button", { name: "Buscar horários" }).click();
