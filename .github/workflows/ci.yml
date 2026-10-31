@@ -87,6 +87,15 @@ jobs:
       - name: Build container image
         run: docker build --tag "$CUTZ_IMAGE" .
 
+      - name: Check that the web container can write to its media volume
+        run: |
+          media_volume="cutz-ci-media-${{ github.run_id }}-${{ github.run_attempt }}"
+          docker volume create "$media_volume"
+          trap 'docker volume rm -f "$media_volume" >/dev/null' EXIT
+          docker run --rm --mount "type=volume,source=$media_volume,target=/data/media" \
+            --entrypoint node "$CUTZ_IMAGE" \
+            -e 'const fs = require("node:fs"); fs.writeFileSync("/data/media/write-test", "ok"); fs.unlinkSync("/data/media/write-test");'
+
       - name: Validate production compose
         run: docker compose -f docker-compose.production.yml config >/dev/null
 
