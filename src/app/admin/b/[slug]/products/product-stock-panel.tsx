@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -55,13 +55,6 @@ export function ProductStockPanel({ slug, productId, quantity }: {
     }
   }, [endpoint, router]);
 
-  useEffect(() => {
-    if (!expanded) return;
-    const controller = new AbortController();
-    void reload(controller.signal);
-    return () => controller.abort();
-  }, [expanded, reload]);
-
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -111,7 +104,7 @@ export function ProductStockPanel({ slug, productId, quantity }: {
   return (
     <div className="space-y-4 border-t border-border pt-4">
       <Button type="button" size="sm" variant="outline"
-        onClick={() => setExpanded((value) => !value)}
+        onClick={() => { if (!expanded) void reload(); setExpanded((value) => !value); }}
         aria-expanded={expanded}>
         {expanded ? "Ocultar estoque" : "Movimentar estoque e consultar histórico"}
       </Button>
