@@ -28,8 +28,8 @@ function localTime(instant: string) {
   }).format(new Date(instant));
 }
 
-async function firstAvailableSlot(request: APIRequestContext, serviceId: string, staffId: string, date: string) {
-  const query = new URLSearchParams({ serviceId, staffId, date });
+async function firstAvailableSlot(request: APIRequestContext, serviceId: string, date: string) {
+  const query = new URLSearchParams({ serviceId, date });
   const response = await request.get(`/api/b/demo/availability?${query}`);
   expect(response.ok()).toBe(true);
   const result = (await response.json()) as {
@@ -45,11 +45,10 @@ test("shows available slots in the waitlist and continues booking with the chose
   const waitlist = page.getByRole("heading", { name: "Lista de espera", exact: true }).locator("..");
   await waitlist.getByLabel("Serviço").selectOption({ label: "Corte" });
   const serviceId = await waitlist.getByLabel("Serviço").inputValue();
-  const staffId = await booking.getByLabel("Profissional").inputValue();
   const date = nextMonday();
-  const slot = await firstAvailableSlot(request, serviceId, staffId, date);
+  const slot = await firstAvailableSlot(request, serviceId, date);
 
-  await waitlist.getByLabel("Profissional").selectOption(staffId);
+  await waitlist.getByLabel("Profissional").selectOption(slot.staffId);
   await waitlist.getByLabel("Data desejada").fill(date);
   await waitlist.getByLabel("A partir de").fill(localTime(slot.startsAt));
   await waitlist.getByLabel("Até").fill(localTime(slot.endsAt));
@@ -68,15 +67,13 @@ test("shows available slots in the waitlist and continues booking with the chose
 
 test("lets the customer join the waitlist even when a bookable slot exists", async ({ page, request }) => {
   await page.goto("/b/demo");
-  const booking = page.locator("#booking-flow");
   const waitlist = page.getByRole("heading", { name: "Lista de espera", exact: true }).locator("..");
   await waitlist.getByLabel("Serviço").selectOption({ label: "Corte" });
   const serviceId = await waitlist.getByLabel("Serviço").inputValue();
-  const staffId = await booking.getByLabel("Profissional").inputValue();
   const date = nextMonday();
-  const slot = await firstAvailableSlot(request, serviceId, staffId, date);
+  const slot = await firstAvailableSlot(request, serviceId, date);
 
-  await waitlist.getByLabel("Profissional").selectOption(staffId);
+
   await waitlist.getByLabel("Data desejada").fill(date);
   await waitlist.getByLabel("A partir de").fill(localTime(slot.startsAt));
   await waitlist.getByLabel("Até").fill(localTime(slot.endsAt));
