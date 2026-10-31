@@ -1,7 +1,7 @@
 import { getDb } from "@/infrastructure/db/client";
 import type { DbExecutor } from "@/infrastructure/db/executor";
 import { resolveBarbershopBySlug } from "@/modules/barbershops";
-import { catalogImageUrl } from "@/modules/catalog/image-url";
+import { catalogImageUrl } from "@/modules/catalog";
 import {
   getCatalogAvailabilityInput,
   listPublicServices,
