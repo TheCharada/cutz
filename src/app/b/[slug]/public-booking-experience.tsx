@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { PublicService, PublicStaffMember } from "@/modules/catalog";
 import { BookingFlow } from "./booking-flow";
+import type { BookingIntent } from "./booking-intent";
 import type { RememberedCustomer } from "./customer-session-types";
 import { WaitlistForm } from "./waitlist-form";
 
@@ -25,6 +26,18 @@ export function PublicBookingExperience({
   const router = useRouter();
   const [customer, setCustomer] = useState<RememberedCustomer | null>(initialCustomer);
   const [switchingCustomer, setSwitchingCustomer] = useState(false);
+  const [bookingIntent, setBookingIntent] = useState<BookingIntent | null>(null);
+  const nextRequestId = useRef(0);
+
+  function selectAvailableSlot(slot: Omit<BookingIntent, "requestId">) {
+    nextRequestId.current += 1;
+    setBookingIntent({ ...slot, requestId: nextRequestId.current });
+    requestAnimationFrame(() => {
+      const booking = document.getElementById("booking-flow");
+      booking?.focus({ preventScroll: true });
+      booking?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 
   async function switchCustomer() {
     setSwitchingCustomer(true);
@@ -39,19 +52,25 @@ export function PublicBookingExperience({
 
   return (
     <div className="space-y-10">
-      <BookingFlow
-        telegramEnabled={telegramEnabled}
-        slug={slug}
-        timezone={timezone}
-        services={services}
-        staff={staff}
-        customer={customer}
-        switchingCustomer={switchingCustomer}
-        onCustomerSessionReady={setCustomer}
-        onCustomerSessionInvalid={() => setCustomer(null)}
-        onSwitchCustomer={switchCustomer}
-      />
+      <section id="booking-flow" tabIndex={-1} className="scroll-mt-6 outline-none" aria-label="Agendamento">
+        <BookingFlow
+          key={bookingIntent?.requestId ?? "default"}
+          bookingIntent={bookingIntent}
+          telegramEnabled={telegramEnabled}
+          slug={slug}
+          timezone={timezone}
+          services={services}
+          staff={staff}
+          customer={customer}
+          switchingCustomer={switchingCustomer}
+          onCustomerSessionReady={setCustomer}
+          onCustomerSessionInvalid={() => setCustomer(null)}
+          onSwitchCustomer={switchCustomer}
+        />
+      </section>
       <WaitlistForm
+        onBookAvailableSlot={selectAvailableSlot}
+        timezone={timezone}
         telegramEnabled={telegramEnabled}
         slug={slug}
         services={services}

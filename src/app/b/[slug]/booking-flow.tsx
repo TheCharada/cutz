@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { TelegramLinkCard } from "@/components/cutz/telegram-link-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,11 @@ import { Label } from "@/components/ui/label";
 import type { PublicService, PublicStaffMember } from "@/modules/catalog";
 import type { PublicAvailabilitySlot } from "@/modules/scheduling";
 import type { RememberedCustomer } from "./customer-session-types";
+import type { BookingIntent } from "./booking-intent";
 import { OtpVerification, type PublicOtpChallenge } from "./otp-verification";
 
 type BookingFlowProps = {
+  bookingIntent?: BookingIntent | null;
   telegramEnabled: boolean;
   slug: string;
   timezone: string;
@@ -45,6 +47,7 @@ function localSlotLabel(iso: string, timezone: string) {
 }
 
 export function BookingFlow({
+  bookingIntent,
   telegramEnabled,
   slug,
   timezone,
@@ -56,24 +59,27 @@ export function BookingFlow({
   onCustomerSessionInvalid,
   onSwitchCustomer,
 }: BookingFlowProps) {
-  const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
-  const [staffId, setStaffId] = useState(staff[0]?.id ?? "");
-  const [date, setDate] = useState("");
+  const [serviceId, setServiceId] = useState(bookingIntent?.serviceId ?? services[0]?.id ?? "");
+  const [staffId, setStaffId] = useState(bookingIntent?.staffId ?? staff[0]?.id ?? "");
+  const [date, setDate] = useState(bookingIntent?.date ?? "");
   const [slots, setSlots] = useState<PublicAvailabilitySlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<PublicAvailabilitySlot | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(Boolean(bookingIntent));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searched, setSearched] = useState(false);
+  const [searched, setSearched] = useState(Boolean(bookingIntent));
   const [managementUrl, setManagementUrl] = useState<string | null>(null);
   const [otpChallenge, setOtpChallenge] = useState<PublicOtpChallenge | null>(null);
+  const availabilityRequest = useRef(0);
 
   function invalidateAvailability() {
+    availabilityRequest.current += 1;
     setSlots([]);
     setSelectedSlot(null);
     setSearched(false);
+    setLoadingSlots(false);
     setError(null);
   }
 
@@ -86,13 +92,50 @@ export function BookingFlow({
     }
   }
 
-  async function fetchSlots() {
-    const query = new URLSearchParams({ serviceId, staffId, date });
+  const fetchSlots = useCallback(async (params: { serviceId: string; staffId: string; date: string }) => {
+    const query = new URLSearchParams(params);
     const response = await fetch(`/api/b/${slug}/availability?${query.toString()}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(await readError(response, "Não foi possível consultar os horários."));
+    if (!response.ok) {
+      let message = "Não foi possível consultar os horários.";
+      try {
+        const body = (await response.json()) as ApiError;
+        message = body.error?.message ?? message;
+      } catch {
+        // Keep the fallback when a response has no JSON body.
+      }
+      throw new Error(message);
+    }
     const body = (await response.json()) as { slots: PublicAvailabilitySlot[] };
-    setSlots(body.slots);
-  }
+    return body.slots;
+  }, [slug]);
+
+  useEffect(() => {
+    if (!bookingIntent) return;
+    const request = ++availabilityRequest.current;
+
+    void (async () => {
+      try {
+        const nextSlots = await fetchSlots(bookingIntent);
+        if (request !== availabilityRequest.current) return;
+        setSlots(nextSlots);
+        const matching = nextSlots.find((slot) =>
+          slot.staffId === bookingIntent.staffId && slot.startsAt === bookingIntent.startsAt);
+        if (matching) {
+          setSelectedSlot(matching);
+        } else {
+          setError("Esse horário não está mais disponível. Escolha uma das alternativas atualizadas.");
+        }
+      } catch (reason) {
+        if (request !== availabilityRequest.current) return;
+        setError(reason instanceof Error ? reason.message : "Não foi possível verificar o horário.");
+      } finally {
+        if (request === availabilityRequest.current) setLoadingSlots(false);
+      }
+    })();
+    return () => {
+      availabilityRequest.current += 1;
+    };
+  }, [bookingIntent, fetchSlots]);
 
   async function loadSlots() {
     setError(null);
@@ -106,27 +149,33 @@ export function BookingFlow({
       return;
     }
 
+    const request = ++availabilityRequest.current;
     setLoadingSlots(true);
     try {
-      await fetchSlots();
+      const nextSlots = await fetchSlots({ serviceId, staffId, date });
+      if (request === availabilityRequest.current) setSlots(nextSlots);
     } catch (reason) {
-      setSlots([]);
-      setError(reason instanceof Error ? reason.message : "Não foi possível consultar os horários.");
+      if (request === availabilityRequest.current) {
+        setSlots([]);
+        setError(reason instanceof Error ? reason.message : "Não foi possível consultar os horários.");
+      }
     } finally {
-      setLoadingSlots(false);
+      if (request === availabilityRequest.current) setLoadingSlots(false);
     }
   }
 
   async function refreshSlotsAfterConflict() {
     setSelectedSlot(null);
     setSearched(true);
+    const request = ++availabilityRequest.current;
     setLoadingSlots(true);
     try {
-      await fetchSlots();
+      const nextSlots = await fetchSlots({ serviceId, staffId, date });
+      if (request === availabilityRequest.current) setSlots(nextSlots);
     } catch {
-      setSlots([]);
+      if (request === availabilityRequest.current) setSlots([]);
     } finally {
-      setLoadingSlots(false);
+      if (request === availabilityRequest.current) setLoadingSlots(false);
     }
   }
 

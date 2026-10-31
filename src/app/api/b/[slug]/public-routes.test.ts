@@ -136,6 +136,52 @@ describe("public catalog HTTP routes", () => {
     expect(workflowMocks.getPublicAvailabilityForBarbershop).not.toHaveBeenCalled();
   });
 
+  it("accepts an optional waitlist window without requiring a staff filter", async () => {
+    workflowMocks.getPublicAvailabilityForBarbershop.mockResolvedValue({ status: "ok", slots: [] });
+    const response = await getAvailability(
+      new Request(
+        `http://localhost/api/b/demo/availability?serviceId=${serviceId}&date=2026-09-07&earliestTime=08:00&latestTime=09:00`,
+      ),
+      routeContext(),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ slots: [] });
+    expect(workflowMocks.getPublicAvailabilityForBarbershop).toHaveBeenCalledWith({
+      slug: "demo",
+      serviceId,
+      date: "2026-09-07",
+      earliestTime: "08:00",
+      latestTime: "09:00",
+    });
+  });
+
+  it.each([
+    "earliestTime=08:00",
+    "latestTime=09:00",
+    "earliestTime=09:00&latestTime=09:00",
+    "earliestTime=10:00&latestTime=09:00",
+    "earliestTime=8:00&latestTime=09:00",
+    "earliestTime=08:00&latestTime=24:00",
+  ])("rejects invalid availability windows (%s)", async (window) => {
+    const response = await getAvailability(
+      new Request(`http://localhost/api/b/demo/availability?serviceId=${serviceId}&date=2026-09-07&${window}`),
+      routeContext(),
+    );
+    expect(response.status).toBe(400);
+    expect(workflowMocks.getPublicAvailabilityForBarbershop).not.toHaveBeenCalled();
+  });
+
+  it("handles invalid local times rejected by the availability workflow", async () => {
+    workflowMocks.getPublicAvailabilityForBarbershop.mockResolvedValue({ status: "invalid-window" });
+    const response = await getAvailability(
+      new Request(`http://localhost/api/b/demo/availability?serviceId=${serviceId}&date=2026-09-07&earliestTime=08:00&latestTime=09:00`),
+      routeContext(),
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: { code: "INVALID_REQUEST" } });
+  });
+
   it("returns the stable service-not-found availability error", async () => {
     workflowMocks.getPublicAvailabilityForBarbershop.mockResolvedValue({
       status: "service-not-found",
