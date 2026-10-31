@@ -22,3 +22,14 @@ export type {
   PublicAvailabilitySlot,
   ScheduledAppointmentBlock,
 } from "./types";
+export {
+  addAdditionalServiceRecord,
+  findAdditionalServiceByOperation,
+  findAppointmentServiceById,
+  getBookedServiceRecord,
+  hasAdditionalServiceRecords,
+  listAppointmentServiceRecords,
+  markBookedServicePerformed,
+  voidAdditionalServiceRecord,
+} from "./appointment-services.repository";
+export type { BookedServiceSnapshot } from "./appointment-services.repository";
