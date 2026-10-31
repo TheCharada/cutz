@@ -32,6 +32,8 @@ function nextWeekday(targetDay: number, timeZone: string) {
 }
 
 async function expectNoA11yViolations(page: Page) {
+  // Metadata may arrive after the visible page when Next.js streams the response.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
 }
