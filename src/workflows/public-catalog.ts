@@ -144,14 +144,15 @@ export async function getPublicAvailabilityForBarbershop(
       return { status: "invalid-window" as const };
     }
 
-    if (windowStartsAt >= windowEndsAt) {
+    if (windowStartsAt.getTime() >= windowEndsAt.getTime()) {
       return { status: "invalid-window" as const };
     }
 
     return {
       status: "ok" as const,
       slots: slots.filter((slot) =>
-        new Date(slot.startsAt) >= windowStartsAt && new Date(slot.endsAt) <= windowEndsAt),
+        new Date(slot.startsAt).getTime() >= windowStartsAt.getTime() &&
+        new Date(slot.endsAt).getTime() <= windowEndsAt.getTime()),
     };
   }
 
