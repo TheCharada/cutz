@@ -1,3 +1,4 @@
+import { chooseService } from "./helpers/choose-service";
 import { expect, test } from "@playwright/test";
 import pg from "pg";
 
@@ -78,7 +79,7 @@ test("cliente entra na fila, recebe vaga liberada e aceita criando Appointment",
 
   await page.goto("/b/demo");
   const bookingSlots = page.getByRole("heading", { name: "1. Escolha o horário" }).locator("..");
-  await bookingSlots.getByLabel("Serviço").selectOption({ label: "Corte" });
+  await chooseService(bookingSlots.getByLabel("Serviço"), "Corte");
   await bookingSlots.getByLabel("Profissional").selectOption({ label: "Profissional Exemplo" });
   await bookingSlots.getByLabel("Data").fill(desiredDate);
   await bookingSlots.getByRole("button", { name: "Buscar horários" }).click();
@@ -104,7 +105,7 @@ test("cliente entra na fila, recebe vaga liberada e aceita criando Appointment",
 
   await page.goto("/b/demo");
   const waitlist = page.getByRole("heading", { name: "Lista de espera", exact: true }).locator("..");
-  await waitlist.getByLabel("Serviço").selectOption({ label: "Corte" });
+  await chooseService(waitlist.getByLabel("Serviço"), "Corte");
   await waitlist.getByLabel("Profissional").selectOption({ label: "Profissional Exemplo" });
   await waitlist.getByLabel("Data desejada").fill(desiredDate);
   await waitlist.getByLabel("A partir de").fill(localTime(appointmentView.appointment.startsAt, demoTimezone));
