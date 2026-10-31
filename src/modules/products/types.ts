@@ -13,7 +13,8 @@ export type StockCommand = {
 
 export type StockResult =
   | { status: "ok" | "already-recorded"; movement: StockMovement; stockQuantity: number }
-  | { status: "not-found" | "operation-conflict" }
+  | { status: "not-found" }
+  | { status: "operation-conflict" }
   | { status: "insufficient-stock"; availableQuantity: number };
 
 export type StockMovement = {
