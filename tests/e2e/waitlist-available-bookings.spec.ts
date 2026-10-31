@@ -43,6 +43,7 @@ test("shows available slots in the waitlist and continues booking with the chose
   await page.goto("/b/demo");
   const booking = page.locator("#booking-flow");
   const waitlist = page.getByRole("heading", { name: "Lista de espera", exact: true }).locator("..");
+  await waitlist.getByLabel("Serviço").selectOption({ label: "Corte" });
   const serviceId = await waitlist.getByLabel("Serviço").inputValue();
   const staffId = await booking.getByLabel("Profissional").inputValue();
   const date = nextMonday();
@@ -69,6 +70,7 @@ test("lets the customer join the waitlist even when a bookable slot exists", asy
   await page.goto("/b/demo");
   const booking = page.locator("#booking-flow");
   const waitlist = page.getByRole("heading", { name: "Lista de espera", exact: true }).locator("..");
+  await waitlist.getByLabel("Serviço").selectOption({ label: "Corte" });
   const serviceId = await waitlist.getByLabel("Serviço").inputValue();
   const staffId = await booking.getByLabel("Profissional").inputValue();
   const date = nextMonday();
