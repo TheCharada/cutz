@@ -43,10 +43,10 @@ export function ImageUploader({
   }
 
   function choose(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
     resetPreview();
     setError(null);
     setNotice(null);
-    const file = event.target.files?.[0];
     if (!file) return;
     if (!allowed.has(file.type)) {
       setError("Selecione uma imagem JPEG, PNG ou WebP.");
