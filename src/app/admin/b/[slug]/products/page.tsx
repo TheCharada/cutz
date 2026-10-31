@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { resolveServerAdminAccess } from "@/app/admin/_lib/server-auth";
 import { PageShell } from "@/components/cutz/page-shell";
-import { productImageUrl } from "@/modules/products/image-url";
+import { productImageUrl } from "@/modules/products";
 import { listProductsForAdmin } from "@/workflows/admin-products";
 import { ProductManager } from "./product-manager";
 
