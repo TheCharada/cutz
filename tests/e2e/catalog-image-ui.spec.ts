@@ -37,7 +37,8 @@ test("owner can upload, replace and remove service and staff photos", async ({ p
   }).toBe(true);
 
   await page.goto("/b/demo");
-  const servicePhoto = page.getByRole("radio", { name: "Corte" }).locator("..").locator("img");
+  const booking = page.locator("#booking-flow");
+  const servicePhoto = booking.getByRole("radio", { name: "Corte" }).locator("..").locator("img");
   await expect(servicePhoto).toBeVisible();
   const publicUrl = await servicePhoto.getAttribute("src");
   expect(publicUrl).toBeTruthy();
@@ -62,7 +63,7 @@ test("owner can upload, replace and remove service and staff photos", async ({ p
     .toHaveAttribute("src", /\/api\/b\/demo\/images\/staff\//);
 
   await page.goto("/b/demo");
-  const staffPhoto = page.getByRole("radio", { name: "Profissional Exemplo" })
+  const staffPhoto = page.locator("#booking-flow").getByRole("radio", { name: "Profissional Exemplo" })
     .locator("..").locator("img");
   await expect(staffPhoto).toBeVisible();
 
@@ -72,7 +73,8 @@ test("owner can upload, replace and remove service and staff photos", async ({ p
   await expect(page.locator('[data-slot="card"]').first().locator("img")).toHaveCount(0);
 
   await page.goto("/b/demo");
-  await expect(page.getByRole("radio", { name: "Corte" }).locator("..").locator("img")).toHaveCount(0);
-  await expect(page.getByRole("radio", { name: "Profissional Exemplo" })
+  await expect(page.locator("#booking-flow").getByRole("radio", { name: "Corte" })
+    .locator("..").locator("img")).toHaveCount(0);
+  await expect(page.locator("#booking-flow").getByRole("radio", { name: "Profissional Exemplo" })
     .locator("..").locator("img")).toHaveCount(0);
 });
