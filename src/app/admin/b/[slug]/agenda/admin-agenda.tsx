@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AppointmentServicesPanel } from "./appointment-services-panel";
 
 type Appointment = {
   id: string;
@@ -68,6 +69,7 @@ export function AdminAgenda({
   const [date, setDate] = useState(initialDate);
   const [error, setError] = useState<string | null>(null);
   const [mutatingId, setMutatingId] = useState<string | null>(null);
+  const [openServicesId, setOpenServicesId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [services, setServices] = useState<PublicService[]>([]);
@@ -376,6 +378,26 @@ export function AdminAgenda({
                         Cancelar
                       </Button>
                     </div>
+                  ) : null}
+                  <div className="mt-4">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setOpenServicesId((current) =>
+                        current === appointment.id ? null : appointment.id)}
+                      aria-expanded={openServicesId === appointment.id}
+                    >
+                      {openServicesId === appointment.id ? "Ocultar serviços" : "Ver atendimento"}
+                    </Button>
+                  </div>
+                  {openServicesId === appointment.id ? (
+                    <AppointmentServicesPanel
+                      slug={slug}
+                      appointmentId={appointment.id}
+                      timezone={timezone}
+                      onClose={() => setOpenServicesId(null)}
+                    />
                   ) : null}
                 </article>
               );
