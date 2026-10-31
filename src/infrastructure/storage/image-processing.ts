@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp, { type Metadata } from "sharp";
 
 export const maxImageBytes = 4 * 1024 * 1024;
 export const maxImagePixels = 12_000_000;
@@ -14,7 +14,7 @@ export async function prepareCatalogImage(bytes: Buffer): Promise<Buffer> {
   if (bytes.length > maxImageBytes) throw new ImageValidationError("TOO_LARGE");
   if (bytes.length === 0) throw new ImageValidationError("INVALID_IMAGE");
 
-  let metadata: sharp.Metadata;
+  let metadata: Metadata;
   try {
     metadata = await sharp(bytes, { limitInputPixels: maxImagePixels, failOn: "error" }).metadata();
   } catch {
