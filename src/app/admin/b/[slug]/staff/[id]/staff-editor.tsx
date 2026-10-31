@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImageUploader } from "@/components/cutz/image-uploader";
 
 type Staff = {
   id: string;
   name: string;
   active: boolean;
   acceptsAppointments: boolean;
+  imageUrl: string | null;
 };
 type Service = { id: string; name: string; active: boolean };
 type WorkingHour = { weekday: number; startsAt: string; endsAt: string };
@@ -230,6 +232,14 @@ export function StaffEditor({
             </div>
             <Button type="submit" disabled={isBusy}>{busy === "staff" ? "Salvando…" : "Salvar profissional"}</Button>
           </form>
+          <div className="mt-6 border-t border-border pt-5">
+            <ImageUploader
+              name={staff.name}
+              imageUrl={staff.imageUrl}
+              label="Fotografia do profissional"
+              uploadUrl={`/api/admin/b/${slug}/staff/${staff.id}/image`}
+            />
+          </div>
         </CardContent>
       </Card>
 
