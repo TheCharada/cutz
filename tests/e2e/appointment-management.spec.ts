@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { chooseService } from "./helpers/choose-service";
 
 const demoTimezone = "America/Sao_Paulo";
 
@@ -32,7 +33,7 @@ function nextWeekday(targetDay: number, timeZone: string) {
 async function createBookingAndOpenManagement(page: Page) {
   await page.goto("/b/demo");
   const slotSection = page.getByRole("heading", { name: "1. Escolha o horário" }).locator("..");
-  await slotSection.getByLabel("Serviço").selectOption({ label: "Corte" });
+  await chooseService(slotSection.getByLabel("Serviço"), "Corte");
   await slotSection.getByLabel("Profissional").selectOption({ label: "Profissional Exemplo" });
   await slotSection.getByLabel("Data").fill(nextWeekday(1, demoTimezone));
   await slotSection.getByRole("button", { name: "Buscar horários" }).click();
@@ -47,6 +48,7 @@ async function createBookingAndOpenManagement(page: Page) {
   await expect(page.getByRole("heading", { name: "Agendamento confirmado" })).toBeVisible();
   await page.getByRole("link", { name: "Gerenciar agendamento" }).click();
   await expect(page.getByRole("heading", { name: "Gerenciar agendamento" })).toBeVisible();
+  await expect(page.getByText(/R\$\s*35,00/)).toBeVisible();
 }
 
 test("cliente cancela agendamento por capability com confirmação explícita", async ({ page }) => {
