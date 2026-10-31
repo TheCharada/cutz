@@ -26,6 +26,9 @@ importers:
       pino:
         specifier: ^10.3.1
         version: 10.3.1
+      sharp:
+        specifier: ^0.35.4
+        version: 0.35.4(@types/node@22.20.1)
       react:
         specifier: ^19.2.8
         version: 19.2.8
