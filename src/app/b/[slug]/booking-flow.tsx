@@ -59,17 +59,17 @@ export function BookingFlow({
   onCustomerSessionInvalid,
   onSwitchCustomer,
 }: BookingFlowProps) {
-  const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
-  const [staffId, setStaffId] = useState(staff[0]?.id ?? "");
-  const [date, setDate] = useState("");
+  const [serviceId, setServiceId] = useState(bookingIntent?.serviceId ?? services[0]?.id ?? "");
+  const [staffId, setStaffId] = useState(bookingIntent?.staffId ?? staff[0]?.id ?? "");
+  const [date, setDate] = useState(bookingIntent?.date ?? "");
   const [slots, setSlots] = useState<PublicAvailabilitySlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<PublicAvailabilitySlot | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(Boolean(bookingIntent));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searched, setSearched] = useState(false);
+  const [searched, setSearched] = useState(Boolean(bookingIntent));
   const [managementUrl, setManagementUrl] = useState<string | null>(null);
   const [otpChallenge, setOtpChallenge] = useState<PublicOtpChallenge | null>(null);
   const availabilityRequest = useRef(0);
@@ -112,17 +112,6 @@ export function BookingFlow({
   useEffect(() => {
     if (!bookingIntent) return;
     const request = ++availabilityRequest.current;
-
-    setServiceId(bookingIntent.serviceId);
-    setStaffId(bookingIntent.staffId);
-    setDate(bookingIntent.date);
-    setManagementUrl(null);
-    setOtpChallenge(null);
-    setError(null);
-    setSelectedSlot(null);
-    setSlots([]);
-    setSearched(true);
-    setLoadingSlots(true);
 
     void (async () => {
       try {
