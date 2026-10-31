@@ -21,6 +21,7 @@ import {
 import {
   cancelScheduledAppointmentInTransaction,
   getBookedServiceRecord,
+  listBookedServiceRecords,
   createAppointmentInTransaction,
   finishScheduledAppointmentInTransaction,
   getAppointmentById,
@@ -65,11 +66,36 @@ async function appointmentSnapshots(executor: DbExecutor, appointment: {
 export async function listAdminAgenda(params: { barbershop: BarbershopContext; date: string }, options: { database?: Database } = {}) {
   const database = options.database ?? getDb();
   const range = localDateBounds(params.date, params.barbershop.timezone);
-  const appointments = await listAppointmentsForRange(database, { barbershopId: params.barbershop.id, rangeStartsAt: range.startsAt, rangeEndsAt: range.endsAt });
+  const appointments = await listAppointmentsForRange(database, {
+    barbershopId: params.barbershop.id,
+    rangeStartsAt: range.startsAt,
+    rangeEndsAt: range.endsAt,
+  });
+  const booked = await listBookedServiceRecords(
+    database, params.barbershop.id, appointments.map((appointment) => appointment.id),
+  );
+  const bookedByAppointment = new Map(booked.map((item) => [item.appointmentId, item]));
+
   const rows = [];
   for (const appointment of appointments) {
     const snapshots = await appointmentSnapshots(database, appointment);
-    rows.push({ ...appointment, customer: { id: snapshots.customer.id, name: snapshots.customer.name, phoneE164: snapshots.customer.phoneE164 }, service: { id: snapshots.service.id, name: snapshots.service.name, durationMinutes: snapshots.service.durationMinutes }, staff: { id: snapshots.staff.id, name: snapshots.staff.name } });
+    const original = bookedByAppointment.get(appointment.id);
+    rows.push({
+      ...appointment,
+      customer: {
+        id: snapshots.customer.id, name: snapshots.customer.name,
+        phoneE164: snapshots.customer.phoneE164,
+      },
+      service: {
+        id: snapshots.service.id, name: snapshots.service.name,
+        durationMinutes: snapshots.service.durationMinutes,
+      },
+      bookedService: {
+        priceCents: original?.unitPriceCents ?? null,
+        historicalSnapshotComplete: original?.historicalSnapshotComplete ?? false,
+      },
+      staff: { id: snapshots.staff.id, name: snapshots.staff.name },
+    });
   }
   return rows;
 }
