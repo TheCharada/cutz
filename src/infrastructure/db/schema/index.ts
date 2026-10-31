@@ -9,3 +9,4 @@ export * from "./notifications";
 export * from "./waitlist";
 export * from "./telegram";
 export * from "./telegram-customers";
+export * from "./products";
