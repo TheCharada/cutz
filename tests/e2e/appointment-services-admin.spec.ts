@@ -31,7 +31,7 @@ test("records and corrects a service after the original appointment is completed
   await panel.getByLabel("Valor aplicado (R$)").fill("25,00");
   await panel.getByRole("button", { name: "Registrar serviço" }).click();
   await expect(panel.getByText("Adicional")).toBeVisible();
-  await expect(panel.getByText(/R\\$\\s*25,00/).first()).toBeVisible();
+  await expect(panel.getByText(/R\$\s*25,00/).first()).toBeVisible();
 
   await panel.getByRole("button", { name: "Anular" }).click();
   await panel.getByLabel("Motivo da anulação").fill("Lançamento de teste");
