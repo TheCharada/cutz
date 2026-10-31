@@ -15,6 +15,7 @@ import {
   updateScheduledAppointmentStatus,
 } from "./appointment.repository";
 import type { ScheduledAppointmentBlock } from "./types";
+import type { BookedServiceSnapshot } from "./appointment-services.repository";
 
 export function getAppointmentById(executor: DbExecutor, barbershopId: string, appointmentId: string) {
   return findAppointmentById(executor, barbershopId, appointmentId);
@@ -46,7 +47,7 @@ export function lockAppointmentByManagementToken(executor: DbExecutor, tokenHash
 export function listScheduledAppointmentBlocks(executor: DbExecutor, params: { barbershopId: string; staffIds: string[]; rangeStartsAt: Date; rangeEndsAt: Date; excludeAppointmentId?: string }): Promise<ScheduledAppointmentBlock[]> {
   return findScheduledAppointmentBlocks(executor, params);
 }
-export function createAppointmentInTransaction(executor: DbExecutor, params: { barbershopId: string; customerId: string; staffId: string; serviceId: string; startsAt: Date; endsAt: Date; managementTokenHash: string; rescheduledFromId?: string }) {
+export function createAppointmentInTransaction(executor: DbExecutor, params: { barbershopId: string; customerId: string; staffId: string; serviceId: string; startsAt: Date; endsAt: Date; managementTokenHash: string; rescheduledFromId?: string; bookedSnapshot?: BookedServiceSnapshot }) {
   return insertScheduledAppointment(executor, params);
 }
 export function cancelScheduledAppointmentInTransaction(executor: DbExecutor, params: { appointmentId: string; cancelledAt: Date; cancelledBy: "CUSTOMER" | "STAFF"; cancellationKind: "CANCELLATION" | "RESCHEDULED"; cancellationReason?: string }) {
