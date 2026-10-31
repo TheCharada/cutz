@@ -25,7 +25,7 @@ test("records and corrects a service after the original appointment is completed
   await appointment.getByRole("button", { name: "Ver atendimento" }).click();
   const panel = appointment.locator('[aria-label="Serviços do atendimento"]');
   await expect(panel.getByText("Serviços do atendimento")).toBeVisible();
-  await expect(panel.getByText("Corte")).toBeVisible();
+  await expect(panel.getByText("Corte", { exact: true }).first()).toBeVisible();
 
   await panel.getByLabel("Serviço").selectOption({ label: "Barba" });
   await panel.getByLabel("Valor aplicado (R$)").fill("25,00");
