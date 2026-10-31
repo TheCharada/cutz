@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { formatPriceCents } from "@/shared/money";
 import { TelegramLinkCard } from "@/components/cutz/telegram-link-card";
 import { isTelegramLinkingEnabled } from "@/config/telegram-linking";
 import { CapabilityDetails } from "@/components/cutz/capability-details";
@@ -79,6 +80,12 @@ export default async function AppointmentCapabilityPage({ params }: PageProps) {
               items={[
                 { label: "Cliente", value: result.customer.name },
                 { label: "Serviço", value: result.service.name },
+                {
+                  label: "Valor registrado na reserva",
+                  value: result.service.historicalSnapshotComplete
+                    ? formatPriceCents(result.service.bookedPriceCents)
+                    : "Valor histórico não informado",
+                },
                 { label: "Profissional", value: result.staff.name },
                 {
                   label: "Horário",
