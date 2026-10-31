@@ -101,8 +101,17 @@ export async function addAdditionalServiceRecord(
   },
 ) {
   const [item] = await executor.insert(appointmentServices).values({
-    ...params,
+    barbershopId: params.barbershopId,
+    appointmentId: params.appointmentId,
+    serviceId: params.serviceId,
     kind: "ADDITIONAL",
+    serviceNameSnapshot: params.serviceNameSnapshot,
+    durationMinutesSnapshot: params.durationMinutesSnapshot,
+    unitPriceCents: params.unitPriceCents,
+    performedAt: params.performedAt,
+    priceAdjustmentReason: params.priceAdjustmentReason,
+    operationId: params.operationId,
+    createdByUserId: params.createdByUserId,
     createdAt: params.now,
   }).returning();
   return item;
@@ -118,6 +127,7 @@ export async function hasAdditionalServiceRecords(
       eq(appointmentServices.barbershopId, barbershopId),
       eq(appointmentServices.appointmentId, appointmentId),
       eq(appointmentServices.kind, "ADDITIONAL"),
+      isNull(appointmentServices.voidedAt),
     )).limit(1);
   return Boolean(record);
 }
