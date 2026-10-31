@@ -34,3 +34,5 @@ export type {
   PublicService,
   PublicStaffMember,
 } from "./types";
+export { catalogImageUrl } from "./image-url";
+export type { CatalogImageKind } from "./image-url";
