@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { TelegramLinkCard } from "@/components/cutz/telegram-link-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { PublicService, PublicStaffMember } from "@/modules/catalog";
+import type { PublicAvailabilitySlot } from "@/modules/scheduling";
+import type { BookingIntent } from "./booking-intent";
 import type { RememberedCustomer } from "./customer-session-types";
 import { OtpVerification, type PublicOtpChallenge } from "./otp-verification";
 
@@ -23,6 +25,8 @@ const selectClassName =
   "h-10 w-full rounded-xl border border-input bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/35 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-70";
 
 export function WaitlistForm({
+  onBookAvailableSlot,
+  timezone,
   telegramEnabled,
   slug,
   services,
@@ -33,6 +37,8 @@ export function WaitlistForm({
   onCustomerSessionInvalid,
   onSwitchCustomer,
 }: {
+  onBookAvailableSlot: (slot: Omit<BookingIntent, "requestId">) => void;
+  timezone: string;
   telegramEnabled: boolean;
   slug: string;
   services: PublicService[];
@@ -54,6 +60,54 @@ export function WaitlistForm({
   const [error, setError] = useState<string | null>(null);
   const [managementUrl, setManagementUrl] = useState<string | null>(null);
   const [otpChallenge, setOtpChallenge] = useState<PublicOtpChallenge | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<PublicAvailabilitySlot[]>([]);
+  const [availabilityState, setAvailabilityState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+
+  useEffect(() => {
+    setAvailableSlots([]);
+    setAvailabilityState("idle");
+    if (!serviceId || !desiredDate || earliestTime >= latestTime) return;
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setAvailabilityState("loading");
+      const params = new URLSearchParams({
+        serviceId,
+        date: desiredDate,
+        earliestTime,
+        latestTime,
+      });
+      if (staffId) params.set("staffId", staffId);
+
+      try {
+        const response = await fetch(`/api/b/${slug}/availability?${params}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("Availability request failed");
+        const data = (await response.json()) as { slots: PublicAvailabilitySlot[] };
+        if (controller.signal.aborted) return;
+        setAvailableSlots(data.slots);
+        setAvailabilityState("ready");
+      } catch {
+        if (!controller.signal.aborted) setAvailabilityState("error");
+      }
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [slug, serviceId, staffId, desiredDate, earliestTime, latestTime]);
+
+  function slotLabel(iso: string) {
+    return new Intl.DateTimeFormat("pt-BR", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(iso));
+  }
+
 
   async function readError(response: Response, fallback: string) {
     try {
@@ -209,6 +263,49 @@ export function WaitlistForm({
               <Input id="waitlist-latest" type="time" required value={latestTime} disabled={submitting} onChange={(event) => setLatestTime(event.target.value)} />
             </div>
           </div>
+
+          {availabilityState === "loading" ? (
+            <p className="text-sm text-muted-foreground" role="status">Verificando horários disponíveis…</p>
+          ) : null}
+
+          {availabilityState === "ready" && availableSlots.length > 0 ? (
+            <div className="rounded-xl border border-success/25 bg-success/5 p-4" aria-live="polite">
+              <p className="font-semibold text-foreground">Encontramos horários disponíveis</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Você pode reservar um horário agora ou continuar na lista de espera.
+              </p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {availableSlots.map((slot) => (
+                  <Button
+                    key={`${slot.staffId}:${slot.startsAt}`}
+                    type="button"
+                    variant="outline"
+                    className="h-auto min-h-12 justify-between gap-3 px-3 py-2 text-left"
+                    onClick={() => onBookAvailableSlot({
+                      serviceId,
+                      staffId: slot.staffId,
+                      date: desiredDate,
+                      startsAt: slot.startsAt,
+                    })}
+                  >
+                    <span>
+                      <span className="block font-semibold">{slotLabel(slot.startsAt)}–{slotLabel(slot.endsAt)}</span>
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {staff.find((member) => member.id === slot.staffId)?.name ?? "Profissional"}
+                      </span>
+                    </span>
+                    <span className="shrink-0 font-semibold">Agendar</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {availabilityState === "error" ? (
+            <p className="text-sm text-muted-foreground" role="status">
+              Não foi possível verificar a agenda agora. Você ainda pode entrar na lista de espera.
+            </p>
+          ) : null}
 
           {customer ? (
             <div className="flex flex-col gap-3 rounded-xl border border-border bg-card/70 p-4 sm:flex-row sm:items-center sm:justify-between">
