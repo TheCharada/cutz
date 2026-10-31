@@ -50,6 +50,7 @@ export function PublicBookingExperience({
     <div className="space-y-10">
       <section id="booking-flow" className="scroll-mt-6" aria-label="Agendamento">
         <BookingFlow
+          key={bookingIntent?.requestId ?? "default"}
           bookingIntent={bookingIntent}
           telegramEnabled={telegramEnabled}
           slug={slug}
