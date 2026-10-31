@@ -42,6 +42,7 @@ export default async function AdminAgendaPage({ params, searchParams }: PageProp
       name: appointment.service.name,
       durationMinutes: appointment.service.durationMinutes,
     },
+    bookedService: appointment.bookedService,
     staff: {
       id: appointment.staff.id,
       name: appointment.staff.name,
