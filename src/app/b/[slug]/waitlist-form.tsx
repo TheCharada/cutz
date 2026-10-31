@@ -64,10 +64,13 @@ export function WaitlistForm({
   const [showAllSlots, setShowAllSlots] = useState(false);
   const [availabilityState, setAvailabilityState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  useEffect(() => {
+  function resetAvailability() {
     setAvailableSlots([]);
     setShowAllSlots(false);
     setAvailabilityState("idle");
+  }
+
+  useEffect(() => {
     if (!serviceId || !desiredDate || earliestTime >= latestTime) return;
 
     const controller = new AbortController();
@@ -239,13 +242,13 @@ export function WaitlistForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="waitlist-service">Serviço</Label>
-              <select id="waitlist-service" className={selectClassName} value={serviceId} disabled={submitting} onChange={(event) => setServiceId(event.target.value)}>
+              <select id="waitlist-service" className={selectClassName} value={serviceId} disabled={submitting} onChange={(event) => { setServiceId(event.target.value); resetAvailability(); }}>
                 {services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}
               </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="waitlist-staff">Profissional</Label>
-              <select id="waitlist-staff" className={selectClassName} value={staffId} disabled={submitting} onChange={(event) => setStaffId(event.target.value)}>
+              <select id="waitlist-staff" className={selectClassName} value={staffId} disabled={submitting} onChange={(event) => { setStaffId(event.target.value); resetAvailability(); }}>
                 <option value="">Qualquer profissional compatível</option>
                 {staff.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
               </select>
@@ -254,15 +257,15 @@ export function WaitlistForm({
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="waitlist-date">Data desejada</Label>
-              <Input id="waitlist-date" type="date" required value={desiredDate} disabled={submitting} onChange={(event) => setDesiredDate(event.target.value)} />
+              <Input id="waitlist-date" type="date" required value={desiredDate} disabled={submitting} onChange={(event) => { setDesiredDate(event.target.value); resetAvailability(); }} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="waitlist-earliest">A partir de</Label>
-              <Input id="waitlist-earliest" type="time" required value={earliestTime} disabled={submitting} onChange={(event) => setEarliestTime(event.target.value)} />
+              <Input id="waitlist-earliest" type="time" required value={earliestTime} disabled={submitting} onChange={(event) => { setEarliestTime(event.target.value); resetAvailability(); }} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="waitlist-latest">Até</Label>
-              <Input id="waitlist-latest" type="time" required value={latestTime} disabled={submitting} onChange={(event) => setLatestTime(event.target.value)} />
+              <Input id="waitlist-latest" type="time" required value={latestTime} disabled={submitting} onChange={(event) => { setLatestTime(event.target.value); resetAvailability(); }} />
             </div>
           </div>
 
