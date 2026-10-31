@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getDb, getPool } from "@/infrastructure/db/client";
 import {
   appointments,
+  appointmentServices,
   barbershops,
   customers,
   customerSessions,
@@ -18,6 +19,7 @@ import {
 } from "@/infrastructure/db/schema";
 import { FixedClock } from "@/shared/clock";
 import { getPublicAvailabilityForBarbershop } from "@/workflows/public-catalog";
+import { getAppointmentCapability } from "@/workflows/appointment-capability";
 import { createPublicAppointment } from "@/workflows/public-appointment";
 import { startPublicCustomerSession } from "@/workflows/customer-session";
 
@@ -161,6 +163,7 @@ async function book(
     staffId: string;
     startsAt: Date;
     clock: FixedClock;
+    expectedPriceCents: number | null;
   }> = {},
 ) {
   return createPublicAppointment(
@@ -170,6 +173,7 @@ async function book(
       serviceId: overrides.serviceId ?? fixture.service.id,
       staffId: overrides.staffId ?? fixture.staff.id,
       startsAt: overrides.startsAt ?? new Date("2026-09-07T11:00:00.000Z"),
+      expectedPriceCents: overrides.expectedPriceCents,
     },
     {
       database: db,
@@ -233,6 +237,50 @@ describe("customer sessions and public appointments", () => {
 
     expect(row.tokenHash).not.toBe(session.token);
     expect(row.tokenHash).toBe(createHash("sha256").update(session.token).digest("hex"));
+  });
+
+  it("refuses a stale price without creating the booking, then preserves the confirmed value", async () => {
+    const session = await startSession(fixture.tenant.slug);
+    await db.update(services).set({ priceCents: 3500 }).where(eq(services.id, fixture.service.id));
+
+    const changed = await book(fixture, session.token, { expectedPriceCents: 2500 });
+    expect(changed.status).toBe("service-price-changed");
+    const stored = await db.select().from(appointments)
+      .where(eq(appointments.barbershopId, fixture.tenant.id));
+    expect(stored).toHaveLength(0);
+
+    const created = await book(fixture, session.token, { expectedPriceCents: 3500 });
+    expect(created.status).toBe("ok");
+    if (created.status !== "ok") throw new Error("Expected a confirmed appointment");
+    expect(created.bookedService.priceCents).toBe(3500);
+
+    await db.update(services).set({ priceCents: 4200 }).where(eq(services.id, fixture.service.id));
+    const [record] = await db.select().from(appointmentServices)
+      .where(eq(appointmentServices.appointmentId, created.appointment.id));
+    expect(record.unitPriceCents).toBe(3500);
+
+    const token = created.managementUrl.split("/a/")[1];
+    const management = await getAppointmentCapability(token, { database: db });
+    expect(management.status).toBe("ok");
+    if (management.status !== "ok") throw new Error("Missing appointment capability");
+    expect(management.service.bookedPriceCents).toBe(3500);
+  });
+
+  it("distinguishes an unspecified price from a free service when booking", async () => {
+    const session = await startSession(fixture.tenant.slug);
+    const unspecified = await book(fixture, session.token, { expectedPriceCents: null });
+    expect(unspecified.status).toBe("ok");
+    if (unspecified.status !== "ok") throw new Error("Expected booking");
+    expect(unspecified.bookedService.priceCents).toBeNull();
+
+    await db.update(services).set({ priceCents: 0 }).where(eq(services.id, fixture.service.id));
+    const free = await book(fixture, session.token, {
+      startsAt: new Date("2026-09-07T11:30:00.000Z"),
+      expectedPriceCents: 0,
+    });
+    expect(free.status).toBe("ok");
+    if (free.status !== "ok") throw new Error("Expected booking");
+    expect(free.bookedService.priceCents).toBe(0);
   });
 
   it("validates service, staff, StaffService and the working schedule", async () => {

@@ -10,6 +10,7 @@ import {
   listTimeOff,
   listWorkingHours,
   lockBookableStaff,
+  lockActiveBookingService as lockActiveBookingServiceRow,
   lockStaffMembersInOrder,
 } from "./catalog.repository";
 import type { CatalogAvailabilityInput, PublicService, PublicStaffMember } from "./types";
@@ -42,6 +43,14 @@ export function getServiceSnapshot(
   serviceId: string,
 ) {
   return findServiceById(executor, barbershopId, serviceId);
+}
+
+export function lockServicePriceForBooking(
+  executor: DbExecutor,
+  barbershopId: string,
+  serviceId: string,
+) {
+  return lockActiveBookingServiceRow(executor, barbershopId, serviceId);
 }
 
 export function getStaffSnapshot(

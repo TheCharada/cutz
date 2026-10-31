@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppointmentServicesPanel } from "./appointment-services-panel";
+import { formatPriceCents } from "@/shared/money";
 
 type Appointment = {
   id: string;
@@ -17,10 +18,11 @@ type Appointment = {
   status: "SCHEDULED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
   customer: { id: string; name: string; phoneE164: string };
   service: { id: string; name: string; durationMinutes: number };
+  bookedService: { priceCents: number | null; historicalSnapshotComplete: boolean };
   staff: { id: string; name: string };
 };
 type Customer = { id: string; name: string; phoneE164: string };
-type PublicService = { id: string; name: string; durationMinutes: number };
+type PublicService = { id: string; name: string; durationMinutes: number; priceCents: number | null };
 type PublicStaff = { id: string; name: string };
 type Slot = { staffId: string; startsAt: string; endsAt: string };
 type ApiError = { error?: { message?: string } };
@@ -81,6 +83,7 @@ export function AdminAgenda({
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
+  const selectedService = services.find((service) => service.id === serviceId);
 
   function redirectExpired(response: Response) {
     if (response.status !== 401) return false;
@@ -274,8 +277,13 @@ export function AdminAgenda({
                       setSelectedSlot("");
                     }}
                   >
-                    {services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}
+                    {services.map((service) => <option key={service.id} value={service.id}>{service.name} · {service.durationMinutes} min · {formatPriceCents(service.priceCents)}</option>)}
                   </select>
+                  {selectedService ? (
+                    <p className="text-xs text-muted-foreground" role="status">
+                      Preço atual: {formatPriceCents(selectedService.priceCents)}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="create-staff">Profissional</Label>
@@ -362,6 +370,11 @@ export function AdminAgenda({
                       <p className="text-sm text-muted-foreground">{dateTimeLabel(appointment.startsAt, timezone)}</p>
                       <h3 className="mt-1 text-lg font-semibold text-foreground">{appointment.customer.name}</h3>
                       <p className="mt-1 text-sm text-muted-foreground">{appointment.service.name} · {appointment.staff.name}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Valor agendado: {appointment.bookedService.historicalSnapshotComplete
+                          ? formatPriceCents(appointment.bookedService.priceCents)
+                          : "Valor histórico não informado"}
+                      </p>
                       <p className="mt-1 text-sm text-muted-foreground">{appointment.customer.phoneE164}</p>
                     </div>
                     <Badge variant={status.variant}>{status.label}</Badge>

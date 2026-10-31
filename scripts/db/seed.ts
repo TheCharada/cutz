@@ -31,6 +31,7 @@ async function findOrCreateService(
   barbershopId: string,
   name: string,
   durationMinutes: number,
+  priceCents: number,
 ) {
   const [existing] = await db
     .select()
@@ -44,7 +45,7 @@ async function findOrCreateService(
 
   const [created] = await db
     .insert(services)
-    .values({ barbershopId, name, durationMinutes })
+    .values({ barbershopId, name, durationMinutes, priceCents })
     .returning();
 
   return created;
@@ -171,9 +172,9 @@ export async function seedDatabase(options: SeedOptions = {}) {
     )[0];
 
   const serviceRows = await Promise.all([
-    findOrCreateService(db, barbershop.id, "Corte", 30),
-    findOrCreateService(db, barbershop.id, "Barba", 30),
-    findOrCreateService(db, barbershop.id, "Corte + Barba", 60),
+    findOrCreateService(db, barbershop.id, "Corte", 30, 3500),
+    findOrCreateService(db, barbershop.id, "Barba", 30, 2500),
+    findOrCreateService(db, barbershop.id, "Corte + Barba", 60, 5500),
   ]);
 
   await db

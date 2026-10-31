@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseService } from "./helpers/choose-service";
 
 const demoTimezone = "America/Sao_Paulo";
 
@@ -36,7 +37,8 @@ test("cliente conclui booking público em verification_mode=NONE", async ({ page
 
   await expect(page.getByRole("heading", { name: "Agendar horário" })).toBeVisible();
   const slotSection = page.getByRole("heading", { name: "1. Escolha o horário" }).locator("..");
-  await slotSection.getByLabel("Serviço").selectOption({ label: "Corte" });
+  await chooseService(slotSection.getByLabel("Serviço"), "Corte");
+  await expect(slotSection.getByText(/Valor do serviço: R\$\s*35,00/)).toBeVisible();
   await slotSection.getByLabel("Profissional").selectOption({ label: "Profissional Exemplo" });
   await slotSection.getByLabel("Data").fill(nextWeekday(1, demoTimezone));
   await slotSection.getByRole("button", { name: "Buscar horários" }).click();
@@ -46,11 +48,13 @@ test("cliente conclui booking público em verification_mode=NONE", async ({ page
   await firstSlot.click();
 
   const customerSection = page.getByRole("heading", { name: "2. Seus dados" }).locator("..");
+  await expect(customerSection.getByText(/Valor do serviço: R\$\s*35,00/)).toBeVisible();
   await customerSection.getByLabel("Nome").fill("Cliente E2E");
   await customerSection.getByLabel("Telefone").fill("(14) 99999-1234");
   await customerSection.getByRole("button", { name: "Confirmar agendamento" }).click();
 
   await expect(page.getByRole("heading", { name: "Agendamento confirmado" })).toBeVisible();
+  await expect(page.getByText(/Valor registrado na reserva: R\$\s*35,00/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Gerenciar agendamento" })).toHaveAttribute(
     "href",
     /\/a\/[A-Za-z0-9_-]+$/,

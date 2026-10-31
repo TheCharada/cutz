@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { chooseService } from "./helpers/choose-service";
 
 const timezone = "America/Sao_Paulo";
 
@@ -43,7 +44,8 @@ test("shows available slots in the waitlist and continues booking with the chose
   await page.goto("/b/demo");
   const booking = page.locator("#booking-flow");
   const waitlist = page.getByRole("heading", { name: "Lista de espera", exact: true }).locator("..");
-  await waitlist.getByLabel("Serviço").selectOption({ label: "Corte" });
+  await chooseService(waitlist.getByLabel("Serviço"), "Corte");
+  await expect(waitlist.getByText(/Preço atual: R\$\s*35,00/)).toBeVisible();
   const serviceId = await waitlist.getByLabel("Serviço").inputValue();
   const date = nextMonday();
   const slot = await firstAvailableSlot(request, serviceId, date);
@@ -68,7 +70,8 @@ test("shows available slots in the waitlist and continues booking with the chose
 test("lets the customer join the waitlist even when a bookable slot exists", async ({ page, request }) => {
   await page.goto("/b/demo");
   const waitlist = page.getByRole("heading", { name: "Lista de espera", exact: true }).locator("..");
-  await waitlist.getByLabel("Serviço").selectOption({ label: "Corte" });
+  await chooseService(waitlist.getByLabel("Serviço"), "Corte");
+  await expect(waitlist.getByText(/Preço atual: R\$\s*35,00/)).toBeVisible();
   const serviceId = await waitlist.getByLabel("Serviço").inputValue();
   const date = nextMonday();
   const slot = await firstAvailableSlot(request, serviceId, date);

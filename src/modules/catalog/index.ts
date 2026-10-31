@@ -1,5 +1,6 @@
 export {
   getActiveBookingService,
+  lockServicePriceForBooking,
   getCatalogAvailabilityInput,
   getServiceSnapshot,
   getStaffSnapshot,

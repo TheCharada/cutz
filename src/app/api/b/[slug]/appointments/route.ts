@@ -15,6 +15,7 @@ const bodySchema = z
     serviceId: z.string().uuid(),
     staffId: z.string().uuid(),
     startsAt: z.string().datetime({ offset: true }),
+    expectedPriceCents: z.number().int().nonnegative().safe().nullable().optional(),
   })
   .strict();
 
@@ -53,6 +54,7 @@ export async function POST(request: Request, context: RouteContext) {
       serviceId: parsed.data.serviceId,
       staffId: parsed.data.staffId,
       startsAt: new Date(parsed.data.startsAt),
+      expectedPriceCents: parsed.data.expectedPriceCents,
     },
     { appOrigin: env.APP_ORIGIN },
   );
@@ -68,6 +70,9 @@ export async function POST(request: Request, context: RouteContext) {
   }
   if (result.status === "service-not-found") {
     return errorResponse("SERVICE_NOT_FOUND", "Serviço não encontrado ou indisponível.", 404);
+  }
+  if (result.status === "service-price-changed") {
+    return errorResponse("SERVICE_PRICE_CHANGED", "O preço deste serviço foi atualizado. Confira o novo valor antes de continuar.", 409);
   }
   if (result.status === "staff-not-found") {
     return errorResponse("STAFF_NOT_FOUND", "Profissional não encontrado ou indisponível.", 404);
@@ -89,6 +94,7 @@ export async function POST(request: Request, context: RouteContext) {
         endsAt: result.appointment.endsAt.toISOString(),
         status: result.appointment.status,
       },
+      bookedService: result.bookedService,
       managementUrl: result.managementUrl,
     },
     { status: 201 },

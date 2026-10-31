@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { TelegramLinkCard } from "@/components/cutz/telegram-link-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { PublicService, PublicStaffMember } from "@/modules/catalog";
 import type { PublicAvailabilitySlot } from "@/modules/scheduling";
+import { formatPriceCents } from "@/shared/money";
 import type { RememberedCustomer } from "./customer-session-types";
 import type { BookingIntent } from "./booking-intent";
 import { OtpVerification, type PublicOtpChallenge } from "./otp-verification";
@@ -27,7 +29,7 @@ type BookingFlowProps = {
   onSwitchCustomer: () => Promise<void>;
 };
 
-type ApiError = { error?: { message?: string } };
+type ApiError = { error?: { code?: string; message?: string } };
 type SessionStartResponse = {
   verificationRequired?: boolean;
   challengeId?: string;
@@ -59,6 +61,7 @@ export function BookingFlow({
   onCustomerSessionInvalid,
   onSwitchCustomer,
 }: BookingFlowProps) {
+  const router = useRouter();
   const [serviceId, setServiceId] = useState(bookingIntent?.serviceId ?? services[0]?.id ?? "");
   const [staffId, setStaffId] = useState(bookingIntent?.staffId ?? staff[0]?.id ?? "");
   const [date, setDate] = useState(bookingIntent?.date ?? "");
@@ -71,8 +74,11 @@ export function BookingFlow({
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(Boolean(bookingIntent));
   const [managementUrl, setManagementUrl] = useState<string | null>(null);
+  const [confirmedPriceCents, setConfirmedPriceCents] = useState<number | null | undefined>(undefined);
   const [otpChallenge, setOtpChallenge] = useState<PublicOtpChallenge | null>(null);
   const availabilityRequest = useRef(0);
+  const selectedService = services.find((service) => service.id === serviceId);
+  const selectedStaff = staff.find((member) => member.id === staffId);
 
   function invalidateAvailability() {
     availabilityRequest.current += 1;
@@ -184,9 +190,20 @@ export function BookingFlow({
     const appointmentResponse = await fetch(`/api/b/${slug}/appointments`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ serviceId, staffId, startsAt: selectedSlot.startsAt }),
+      body: JSON.stringify({
+        serviceId,
+        staffId,
+        startsAt: selectedSlot.startsAt,
+        expectedPriceCents: selectedService?.priceCents ?? null,
+      }),
     });
     if (appointmentResponse.status === 409) {
+      const detail = (await appointmentResponse.json()) as ApiError;
+      if (detail.error?.code === "SERVICE_PRICE_CHANGED") {
+        setSelectedSlot(null);
+        router.refresh();
+        throw new Error("O preço deste serviço mudou. Confira o valor atualizado e selecione o horário novamente.");
+      }
       await refreshSlotsAfterConflict();
       throw new Error("Esse horário não está mais disponível. Atualizamos os horários para você escolher outro.");
     }
@@ -197,7 +214,11 @@ export function BookingFlow({
     if (!appointmentResponse.ok) {
       throw new Error(await readError(appointmentResponse, "Não foi possível concluir o agendamento."));
     }
-    const body = (await appointmentResponse.json()) as { managementUrl: string };
+    const body = (await appointmentResponse.json()) as {
+      managementUrl: string;
+      bookedService: { priceCents: number | null; historicalSnapshotComplete: boolean };
+    };
+    setConfirmedPriceCents(body.bookedService.priceCents);
     setManagementUrl(body.managementUrl);
   }
 
@@ -271,6 +292,11 @@ export function BookingFlow({
           <div className="mx-auto mb-4 flex size-11 items-center justify-center rounded-full bg-success/10 text-xl font-semibold text-success" aria-hidden="true">✓</div>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">Agendamento confirmado</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Seu horário foi reservado. Guarde o link abaixo para cancelar ou remarcar quando precisar.</p>
+          {confirmedPriceCents !== undefined ? (
+            <p className="mt-3 text-sm font-medium text-foreground">
+              Valor registrado na reserva: {formatPriceCents(confirmedPriceCents)}
+            </p>
+          ) : null}
           <a
             className="mt-6 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             href={managementUrl}
@@ -321,7 +347,11 @@ export function BookingFlow({
                   invalidateAvailability();
                 }}
               >
-                {services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name} · {service.durationMinutes} min · {formatPriceCents(service.priceCents)}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="space-y-2">
@@ -353,6 +383,15 @@ export function BookingFlow({
               />
             </div>
           </div>
+
+          {selectedService ? (
+            <div className="mt-4 rounded-xl border border-border bg-muted/30 px-4 py-3" aria-live="polite">
+              <p className="text-sm font-medium text-foreground">{selectedService.name}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {selectedService.durationMinutes} minutos · Valor do serviço: {formatPriceCents(selectedService.priceCents)}
+              </p>
+            </div>
+          ) : null}
 
           <Button className="mt-5 w-full sm:w-auto" type="button" onClick={loadSlots} disabled={loadingSlots || submitting}>
             {loadingSlots ? "Buscando horários…" : "Buscar horários"}
@@ -421,6 +460,21 @@ export function BookingFlow({
           ) : (
             <p className="mt-2 text-sm text-muted-foreground">Use seu nome e telefone uma vez; este navegador lembrará seus dados nos próximos acessos.</p>
           )}
+
+          {selectedService && selectedSlot ? (
+            <div className="mt-5 rounded-xl border border-border bg-muted/30 p-4" aria-label="Resumo do agendamento">
+              <h3 className="text-sm font-semibold text-foreground">Resumo do agendamento</h3>
+              <p className="mt-2 text-sm text-foreground">{selectedService.name} · {selectedService.durationMinutes} min</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {selectedStaff?.name ?? "Profissional"} · {new Intl.DateTimeFormat("pt-BR", {
+                  timeZone: timezone, dateStyle: "short", timeStyle: "short",
+                }).format(new Date(selectedSlot.startsAt))}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-foreground">
+                Valor do serviço: {formatPriceCents(selectedService.priceCents)}
+              </p>
+            </div>
+          ) : null}
 
           <form className="mt-5 space-y-4" onSubmit={submitBooking} aria-busy={submitting}>
             {!customer ? (

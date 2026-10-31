@@ -27,6 +27,7 @@ export {
   findAdditionalServiceByOperation,
   findAppointmentServiceById,
   getBookedServiceRecord,
+  listBookedServiceRecords,
   hasAdditionalServiceRecords,
   listAppointmentServiceRecords,
   markBookedServicePerformed,

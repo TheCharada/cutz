@@ -8,7 +8,7 @@ import {
 } from "@/infrastructure/db/schema";
 import type { BarbershopContext } from "@/modules/barbershops";
 import { FixedClock } from "@/shared/clock";
-import { createAdminAppointment, cancelAdminAppointment, finishAdminAppointment, rescheduleAdminAppointment } from "@/workflows/admin-appointments";
+import { createAdminAppointment, cancelAdminAppointment, finishAdminAppointment, rescheduleAdminAppointment, listAdminAgenda } from "@/workflows/admin-appointments";
 import { completeAdminAppointment } from "@/workflows/admin-appointment-completion";
 import {
   getAdminAppointmentServices, recordAdminAppointmentService, voidAdminAppointmentService,
@@ -133,6 +133,32 @@ describe("appointment service records", () => {
     expect(stored.startsAt).toEqual(appointment.startsAt);
     expect(stored.endsAt).toEqual(appointment.endsAt);
     expect(stored.serviceId).toBe(f.booked.id);
+  });
+
+  it("shows the booked price in the agenda, never the current catalog price", async () => {
+    const appointment = await f.book();
+    await db.update(services).set({ priceCents: 4500 }).where(eq(services.id, f.booked.id));
+
+    const agenda = await listAdminAgenda({
+      barbershop: f.barbershop, date: "2026-09-07",
+    }, { database: db });
+    const item = agenda.find((row) => row.id === appointment.id);
+    expect(item?.bookedService).toEqual({
+      priceCents: 3500,
+      historicalSnapshotComplete: true,
+    });
+
+    await db.update(appointmentServices).set({
+      unitPriceCents: null,
+      historicalSnapshotComplete: false,
+    }).where(eq(appointmentServices.appointmentId, appointment.id));
+    const legacy = await listAdminAgenda({
+      barbershop: f.barbershop, date: "2026-09-07",
+    }, { database: db });
+    expect(legacy.find((row) => row.id === appointment.id)?.bookedService).toEqual({
+      priceCents: null,
+      historicalSnapshotComplete: false,
+    });
   });
 
   it("does not duplicate a service when the same request is retried", async () => {

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { PublicService, PublicStaffMember } from "@/modules/catalog";
 import type { PublicAvailabilitySlot } from "@/modules/scheduling";
+import { formatPriceCents } from "@/shared/money";
 import type { BookingIntent } from "./booking-intent";
 import type { RememberedCustomer } from "./customer-session-types";
 import { OtpVerification, type PublicOtpChallenge } from "./otp-verification";
@@ -50,6 +51,7 @@ export function WaitlistForm({
   onSwitchCustomer: () => Promise<void>;
 }) {
   const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
+  const selectedService = services.find((service) => service.id === serviceId);
   const [staffId, setStaffId] = useState("");
   const [desiredDate, setDesiredDate] = useState("");
   const [earliestTime, setEarliestTime] = useState("08:00");
@@ -243,8 +245,17 @@ export function WaitlistForm({
             <div className="space-y-2">
               <Label htmlFor="waitlist-service">Serviço</Label>
               <select id="waitlist-service" className={selectClassName} value={serviceId} disabled={submitting} onChange={(event) => { setServiceId(event.target.value); resetAvailability(); }}>
-                {services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name} · {service.durationMinutes} min · {formatPriceCents(service.priceCents)}
+                  </option>
+                ))}
               </select>
+              {selectedService ? (
+                <p className="text-xs text-muted-foreground" role="status">
+                  {selectedService.durationMinutes} minutos · Preço atual: {formatPriceCents(selectedService.priceCents)}
+                </p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="waitlist-staff">Profissional</Label>
