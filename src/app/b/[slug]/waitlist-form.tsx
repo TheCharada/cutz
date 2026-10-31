@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import type { PublicService, PublicStaffMember } from "@/modules/catalog";
 import type { PublicAvailabilitySlot } from "@/modules/scheduling";
 import { formatPriceCents } from "@/shared/money";
+import { ServiceChoices, StaffChoices } from "@/components/cutz/catalog-choices";
 import type { BookingIntent } from "./booking-intent";
 import type { RememberedCustomer } from "./customer-session-types";
 import { OtpVerification, type PublicOtpChallenge } from "./otp-verification";
@@ -21,9 +22,6 @@ type SessionStartResponse = {
   expiresAt?: string;
   customer?: RememberedCustomer;
 };
-
-const selectClassName =
-  "h-10 w-full rounded-xl border border-input bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/35 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-70";
 
 export function WaitlistForm({
   onBookAvailableSlot,
@@ -241,29 +239,27 @@ export function WaitlistForm({
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">Não encontrou um horário? Informe uma data e a janela em que você aceita receber uma vaga liberada.</p>
 
         <form className="mt-6 space-y-4" onSubmit={submit} aria-busy={submitting}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="waitlist-service">Serviço</Label>
-              <select id="waitlist-service" className={selectClassName} value={serviceId} disabled={submitting} onChange={(event) => { setServiceId(event.target.value); resetAvailability(); }}>
-                {services.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.name} · {service.durationMinutes} min · {formatPriceCents(service.priceCents)}
-                  </option>
-                ))}
-              </select>
-              {selectedService ? (
-                <p className="text-xs text-muted-foreground" role="status">
-                  {selectedService.durationMinutes} minutos · Preço atual: {formatPriceCents(selectedService.priceCents)}
-                </p>
-              ) : null}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="waitlist-staff">Profissional</Label>
-              <select id="waitlist-staff" className={selectClassName} value={staffId} disabled={submitting} onChange={(event) => { setStaffId(event.target.value); resetAvailability(); }}>
-                <option value="">Qualquer profissional compatível</option>
-                {staff.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
-              </select>
-            </div>
+          <div className="space-y-4">
+            <ServiceChoices
+              name="waitlist-service"
+              services={services}
+              value={serviceId}
+              disabled={submitting}
+              onChange={(id) => { setServiceId(id); resetAvailability(); }}
+            />
+            {selectedService ? (
+              <p className="text-xs text-muted-foreground" role="status">
+                {selectedService.durationMinutes} minutos · Preço atual: {formatPriceCents(selectedService.priceCents)}
+              </p>
+            ) : null}
+            <StaffChoices
+              name="waitlist-staff"
+              staff={staff}
+              value={staffId}
+              allowAny
+              disabled={submitting}
+              onChange={(id) => { setStaffId(id); resetAvailability(); }}
+            />
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
