@@ -13,7 +13,7 @@ import {
 } from "@/modules/scheduling";
 import { listPendingOfferBlocks } from "@/modules/waitlist";
 import { SystemClock, type Clock } from "@/shared/clock";
-import { localDateBounds, weekdayForLocalDate } from "@/shared/time";
+import { localDateBounds, localDateTimeToInstant, weekdayForLocalDate } from "@/shared/time";
 
 const systemClock = new SystemClock();
 
@@ -62,6 +62,8 @@ export async function getPublicAvailabilityForBarbershop(
     serviceId: string;
     date: string;
     staffId?: string;
+    earliestTime?: string;
+    latestTime?: string;
   },
   options: {
     executor?: DbExecutor;
@@ -131,6 +133,27 @@ export async function getPublicAvailabilityForBarbershop(
       appointments: appointmentsByStaff.get(member.id) ?? [],
     })),
   });
+
+  if (params.earliestTime !== undefined && params.latestTime !== undefined) {
+    let windowStartsAt: Date;
+    let windowEndsAt: Date;
+    try {
+      windowStartsAt = localDateTimeToInstant(params.date, params.earliestTime, barbershop.timezone);
+      windowEndsAt = localDateTimeToInstant(params.date, params.latestTime, barbershop.timezone);
+    } catch {
+      return { status: "invalid-window" as const };
+    }
+
+    if (windowStartsAt >= windowEndsAt) {
+      return { status: "invalid-window" as const };
+    }
+
+    return {
+      status: "ok" as const,
+      slots: slots.filter((slot) =>
+        new Date(slot.startsAt) >= windowStartsAt && new Date(slot.endsAt) <= windowEndsAt),
+    };
+  }
 
   return { status: "ok" as const, slots };
 }
