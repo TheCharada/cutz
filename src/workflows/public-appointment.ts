@@ -2,7 +2,7 @@ import { getAntiAbuseEnv } from "@/config/anti-abuse";
 import { getDb, type Database } from "@/infrastructure/db/client";
 import { resolveBarbershopBySlug } from "@/modules/barbershops";
 import {
-  getActiveBookingService,
+  lockServicePriceForBooking,
   getCatalogAvailabilityInput,
   lockBookableStaffMember,
   staffPerformsService,
@@ -53,6 +53,7 @@ export async function createPublicAppointment(
     serviceId: string;
     staffId: string;
     startsAt: Date;
+    expectedPriceCents?: number | null;
   },
   options: {
     database?: Database;
@@ -97,8 +98,11 @@ export async function createPublicAppointment(
         return { status: "future-appointment-limit" as const };
       }
 
-      const service = await getActiveBookingService(tx, barbershop.id, params.serviceId);
+      const service = await lockServicePriceForBooking(tx, barbershop.id, params.serviceId);
       if (!service) return { status: "service-not-found" as const };
+      if (params.expectedPriceCents !== undefined && params.expectedPriceCents !== service.priceCents) {
+        return { status: "service-price-changed" as const };
+      }
 
       const staff = await lockBookableStaffMember(tx, barbershop.id, params.staffId);
       if (!staff) return { status: "staff-not-found" as const };
@@ -167,6 +171,12 @@ export async function createPublicAppointment(
       const slot = availableSlots.find((candidate) => candidate.startsAt === targetStartsAt);
       if (!slot) return { status: "appointment-conflict" as const };
 
+      const bookedSnapshot = {
+        serviceNameSnapshot: service.name,
+        durationMinutesSnapshot: service.durationMinutes,
+        unitPriceCents: service.priceCents,
+        historicalSnapshotComplete: true,
+      };
       const managementToken = createOpaqueToken();
       const appointment = await createAppointmentInTransaction(tx, {
         barbershopId: barbershop.id,
@@ -176,6 +186,7 @@ export async function createPublicAppointment(
         startsAt: params.startsAt,
         endsAt: new Date(slot.endsAt),
         managementTokenHash: hashOpaqueToken(managementToken),
+        bookedSnapshot,
       });
       const managementUrl = `${appOrigin.replace(/\/$/, "")}/a/${managementToken}`;
 
@@ -205,7 +216,10 @@ export async function createPublicAppointment(
         },
       });
 
-      return { status: "ok" as const, appointment, managementUrl };
+      return { status: "ok" as const, appointment, managementUrl, bookedService: {
+        priceCents: bookedSnapshot.unitPriceCents,
+        historicalSnapshotComplete: true,
+      } };
     });
   } catch (error) {
     if (isAppointmentOverlapError(error)) return { status: "appointment-conflict" as const };
