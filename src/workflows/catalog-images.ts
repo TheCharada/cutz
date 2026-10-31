@@ -6,7 +6,7 @@ import {
   getMediaStorage, prepareCatalogImage, type StorageProvider,
 } from "@/infrastructure/storage";
 import { resolveBarbershopBySlug } from "@/modules/barbershops";
-import { catalogImageUrl, type CatalogImageKind } from "@/modules/catalog/image-url";
+import { catalogImageUrl, type CatalogImageKind } from "@/modules/catalog";
 
 type ImageTarget = {
   barbershopId: string;
