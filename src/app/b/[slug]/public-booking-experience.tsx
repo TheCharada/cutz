@@ -52,15 +52,15 @@ export function PublicBookingExperience({
         <BookingFlow
           bookingIntent={bookingIntent}
           telegramEnabled={telegramEnabled}
-        slug={slug}
-        timezone={timezone}
-        services={services}
-        staff={staff}
-        customer={customer}
-        switchingCustomer={switchingCustomer}
-        onCustomerSessionReady={setCustomer}
-        onCustomerSessionInvalid={() => setCustomer(null)}
-        onSwitchCustomer={switchCustomer}
+          slug={slug}
+          timezone={timezone}
+          services={services}
+          staff={staff}
+          customer={customer}
+          switchingCustomer={switchingCustomer}
+          onCustomerSessionReady={setCustomer}
+          onCustomerSessionInvalid={() => setCustomer(null)}
+          onSwitchCustomer={switchCustomer}
         />
       </section>
       <WaitlistForm
