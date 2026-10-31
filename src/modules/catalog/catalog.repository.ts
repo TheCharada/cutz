@@ -26,6 +26,30 @@ export async function findActiveService(
   return service ?? null;
 }
 
+export async function lockActiveBookingService(
+  executor: DbExecutor,
+  barbershopId: string,
+  serviceId: string,
+) {
+  const [service] = await executor
+    .select({
+      id: services.id,
+      name: services.name,
+      durationMinutes: services.durationMinutes,
+      priceCents: services.priceCents,
+    })
+    .from(services)
+    .where(and(
+      eq(services.id, serviceId),
+      eq(services.barbershopId, barbershopId),
+      eq(services.active, true),
+    ))
+    .limit(1)
+    .for("share");
+
+  return service ?? null;
+}
+
 export async function findServiceById(
   executor: DbExecutor,
   barbershopId: string,
