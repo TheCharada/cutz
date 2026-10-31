@@ -61,10 +61,12 @@ export function WaitlistForm({
   const [managementUrl, setManagementUrl] = useState<string | null>(null);
   const [otpChallenge, setOtpChallenge] = useState<PublicOtpChallenge | null>(null);
   const [availableSlots, setAvailableSlots] = useState<PublicAvailabilitySlot[]>([]);
+  const [showAllSlots, setShowAllSlots] = useState(false);
   const [availabilityState, setAvailabilityState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
   useEffect(() => {
     setAvailableSlots([]);
+    setShowAllSlots(false);
     setAvailabilityState("idle");
     if (!serviceId || !desiredDate || earliestTime >= latestTime) return;
 
@@ -275,7 +277,7 @@ export function WaitlistForm({
                 Você pode reservar um horário agora ou continuar na lista de espera.
               </p>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {availableSlots.map((slot) => (
+                {availableSlots.slice(0, showAllSlots ? undefined : 6).map((slot) => (
                   <Button
                     key={`${slot.staffId}:${slot.startsAt}`}
                     type="button"
@@ -298,6 +300,11 @@ export function WaitlistForm({
                   </Button>
                 ))}
               </div>
+              {availableSlots.length > 6 ? (
+                <Button type="button" variant="ghost" className="mt-3" onClick={() => setShowAllSlots((value) => !value)}>
+                  {showAllSlots ? "Mostrar menos horários" : `Ver mais horários (${availableSlots.length - 6})`}
+                </Button>
+              ) : null}
             </div>
           ) : null}
 
