@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImageUploader } from "@/components/cutz/image-uploader";
 
 type Service = {
   id: string;
   name: string;
   durationMinutes: number;
   priceCents: number | null;
+  imageUrl: string | null;
   active: boolean;
 };
 type ApiError = { error?: { message?: string } };
@@ -169,6 +171,14 @@ export function ServiceManager({ slug, services }: { slug: string; services: Ser
               const action = `service:${service.id}`;
               return (
                 <Card key={`${service.id}:${service.name}:${service.durationMinutes}:${service.priceCents}:${service.active}`}>
+                  <div className="border-b border-border p-4 sm:p-5">
+                    <ImageUploader
+                      name={service.name}
+                      imageUrl={service.imageUrl}
+                      label="Fotografia do serviço"
+                      uploadUrl={`/api/admin/b/${slug}/services/${service.id}/image`}
+                    />
+                  </div>
                   <form onSubmit={(event) => void updateService(service, event)}>
                     <CardHeader>
                       <div className="flex items-start justify-between gap-3">
