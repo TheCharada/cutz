@@ -35,7 +35,7 @@ test("owner can manage a product, update stock and upload a photo", async ({ pag
   await product.getByLabel("Motivo").fill("Estoque inicial");
   await product.getByRole("button", { name: "Registrar movimentação" }).click();
   await expect(product.getByText("Movimentação registrada.")).toBeVisible();
-  await expect(product.getByText("5 unidade(s)", { exact: false })).toBeVisible();
+  await expect(product.getByText(/Saldo atual: 5 unidade\(s\)/)).toBeVisible();
 
   await product.getByLabel("Fotografia do produto").setInputFiles({
     name: "produto.png", mimeType: "image/png", buffer: png,
