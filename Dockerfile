@@ -34,6 +34,8 @@ COPY --from=build --chown=node:node /app/drizzle ./drizzle
 COPY --from=build --chown=node:node /app/public ./public
 COPY --from=build --chown=node:node /app/next.config.ts ./next.config.ts
 
+RUN mkdir -p /data/media && chown node:node /data/media
+
 USER node
 EXPOSE 3000
 CMD ["node", "node_modules/next/dist/bin/next", "start", "--hostname", "0.0.0.0", "--port", "3000"]

@@ -13,19 +13,19 @@ import {
   lockActiveBookingService as lockActiveBookingServiceRow,
   lockStaffMembersInOrder,
 } from "./catalog.repository";
-import type { CatalogAvailabilityInput, PublicService, PublicStaffMember } from "./types";
+import type { CatalogAvailabilityInput } from "./types";
 
 export function listPublicServices(
   executor: DbExecutor,
   barbershopId: string,
-): Promise<PublicService[]> {
+) {
   return listActiveServices(executor, barbershopId);
 }
 
 export function listPublicStaff(
   executor: DbExecutor,
   barbershopId: string,
-): Promise<PublicStaffMember[]> {
+) {
   return listActiveBookableStaff(executor, barbershopId);
 }
 

@@ -81,6 +81,7 @@ export async function findStaffById(
       name: staffMembers.name,
       active: staffMembers.active,
       acceptsAppointments: staffMembers.acceptsAppointments,
+      imageKey: staffMembers.imageKey,
     })
     .from(staffMembers)
     .where(and(eq(staffMembers.id, staffId), eq(staffMembers.barbershopId, barbershopId)))
@@ -170,6 +171,7 @@ export function listActiveServices(executor: DbExecutor, barbershopId: string) {
       name: services.name,
       durationMinutes: services.durationMinutes,
       priceCents: services.priceCents,
+      imageKey: services.imageKey,
     })
     .from(services)
     .where(and(eq(services.barbershopId, barbershopId), eq(services.active, true)))
@@ -181,6 +183,7 @@ export function listActiveBookableStaff(executor: DbExecutor, barbershopId: stri
     .select({
       id: staffMembers.id,
       name: staffMembers.name,
+      imageKey: staffMembers.imageKey,
     })
     .from(staffMembers)
     .where(

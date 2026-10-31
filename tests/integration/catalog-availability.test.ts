@@ -165,6 +165,7 @@ describe("public catalog and availability", () => {
         name: "Cut",
         durationMinutes: 30,
         priceCents: null,
+        imageUrl: null,
       },
     ]);
     expect(rows?.some((row) => row.id === fixture.otherService.id)).toBe(false);

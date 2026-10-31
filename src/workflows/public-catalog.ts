@@ -1,6 +1,7 @@
 import { getDb } from "@/infrastructure/db/client";
 import type { DbExecutor } from "@/infrastructure/db/executor";
 import { resolveBarbershopBySlug } from "@/modules/barbershops";
+import { catalogImageUrl } from "@/modules/catalog";
 import {
   getCatalogAvailabilityInput,
   listPublicServices,
@@ -41,7 +42,11 @@ export async function listPublicServicesForBarbershop(
     return null;
   }
 
-  return listPublicServices(executor, barbershop.id);
+  const rows = await listPublicServices(executor, barbershop.id);
+  return rows.map(({ imageKey, ...service }) => ({
+    ...service,
+    imageUrl: catalogImageUrl(barbershop.slug, "services", service.id, imageKey),
+  }));
 }
 
 export async function listPublicStaffForBarbershop(
@@ -53,7 +58,11 @@ export async function listPublicStaffForBarbershop(
     return null;
   }
 
-  return listPublicStaff(executor, barbershop.id);
+  const rows = await listPublicStaff(executor, barbershop.id);
+  return rows.map(({ imageKey, ...member }) => ({
+    ...member,
+    imageUrl: catalogImageUrl(barbershop.slug, "staff", member.id, imageKey),
+  }));
 }
 
 export async function getPublicAvailabilityForBarbershop(

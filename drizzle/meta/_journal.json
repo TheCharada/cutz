@@ -36,6 +36,13 @@
       "when": 1793462400000,
       "tag": "0004_appointment_services",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793476200000,
+      "tag": "0005_catalog_images",
+      "breakpoints": true
     }
   ]
 }

@@ -28,3 +28,6 @@ pnpm-debug.log*
 # tooling
 *.tsbuildinfo
 .DS_Store
+
+# media uploads
+.data/

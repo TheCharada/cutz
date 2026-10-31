@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { resolveServerAdminAccess } from "@/app/admin/_lib/server-auth";
 import { PageShell } from "@/components/cutz/page-shell";
 import { listAdminCatalog } from "@/workflows/admin-catalog";
+import { catalogImageUrl } from "@/modules/catalog/image-url";
 import { StaffManager } from "./staff-manager";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -24,6 +25,7 @@ export default async function AdminStaffPage({ params }: PageProps) {
     active: member.active,
     acceptsAppointments: member.acceptsAppointments,
     userId: member.userId,
+    imageUrl: catalogImageUrl(slug, "staff", member.id, member.imageKey),
   }));
 
   return (
