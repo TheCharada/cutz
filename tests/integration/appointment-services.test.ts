@@ -80,7 +80,7 @@ async function fixture() {
     await db.delete(barbershops).where(inArray(barbershops.id, [tenant.id, otherTenant.id]));
   }
 
-  return { tenant, otherTenant, barbershop, customer, booked, extra, foreign, user, book, clean };
+  return { tenant, otherTenant, barbershop, customer, booked, extra, foreign, staff, user, book, clean };
 }
 
 describe("appointment service records", () => {
