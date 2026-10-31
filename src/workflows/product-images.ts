@@ -6,7 +6,7 @@ import {
   getMediaStorage, prepareCatalogImage, type StorageProvider,
 } from "@/infrastructure/storage";
 import { resolveBarbershopBySlug } from "@/modules/barbershops";
-import { productImageUrl } from "@/modules/products/image-url";
+import { productImageUrl } from "@/modules/products";
 
 type Params = { barbershopId: string; productId: string; slug: string };
 type Options = { database?: Database; storage?: StorageProvider };
