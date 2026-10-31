@@ -56,18 +56,19 @@ test("owner can upload, replace and remove service and staff photos", async ({ p
 
   await page.goto("/admin/b/demo/staff");
   await page.getByRole("link", { name: "Configurar Profissional Exemplo" }).click();
-  const staffUrl = page.url();
   await page.getByLabel("Fotografia do profissional").setInputFiles(file);
   await page.getByRole("button", { name: "Enviar imagem" }).click();
   await expect(page.locator('[data-slot="card"]').first().locator("img"))
     .toHaveAttribute("src", /\/api\/b\/demo\/images\/staff\//);
+  await expect(page.getByRole("button", { name: "Remover imagem" })).toBeVisible();
 
-  await page.goto("/b/demo");
-  const staffPhoto = page.locator("#booking-flow").getByRole("radio", { name: "Profissional Exemplo" })
-    .locator("..").locator("img");
+  const publicPage = await page.context().newPage();
+  await publicPage.goto("/b/demo");
+  const staffPhoto = publicPage.locator("#booking-flow")
+    .getByRole("radio", { name: "Profissional Exemplo" }).locator("..").locator("img");
   await expect(staffPhoto).toBeVisible();
+  await publicPage.close();
 
-  await page.goto(staffUrl);
   await page.getByRole("button", { name: "Remover imagem" }).click();
   await page.getByRole("button", { name: "Confirmar remoção" }).click();
   await expect(page.locator('[data-slot="card"]').first().locator("img")).toHaveCount(0);
