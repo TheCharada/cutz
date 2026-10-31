@@ -24,14 +24,17 @@ test("owner can upload, replace and remove service and staff photos", async ({ p
   const file = { name: "imagem.png", mimeType: "image/png", buffer: png };
   await service.getByLabel("Fotografia do serviço").setInputFiles(file);
   await service.getByRole("button", { name: "Enviar imagem" }).click();
-  await expect(service.locator("img")).toBeVisible();
+  await expect(service.locator("img")).toHaveAttribute("src", /\/api\/b\/demo\/images\/services\//);
 
   const firstUrl = await service.locator("img").getAttribute("src");
   expect(firstUrl).toContain("/api/b/demo/images/services/");
 
   await service.getByLabel("Fotografia do serviço").setInputFiles(file);
   await service.getByRole("button", { name: "Substituir imagem" }).click();
-  await expect.poll(() => service.locator("img").getAttribute("src")).not.toBe(firstUrl);
+  await expect.poll(async () => {
+    const src = await service.locator("img").getAttribute("src");
+    return Boolean(src?.startsWith("/api/b/demo/images/services/") && src !== firstUrl);
+  }).toBe(true);
 
   await page.goto("/b/demo");
   const servicePhoto = page.getByRole("radio", { name: "Corte" }).locator("..").locator("img");
@@ -55,7 +58,8 @@ test("owner can upload, replace and remove service and staff photos", async ({ p
   const staffUrl = page.url();
   await page.getByLabel("Fotografia do profissional").setInputFiles(file);
   await page.getByRole("button", { name: "Enviar imagem" }).click();
-  await expect(page.locator('[data-slot="card"]').first().locator("img")).toBeVisible();
+  await expect(page.locator('[data-slot="card"]').first().locator("img"))
+    .toHaveAttribute("src", /\/api\/b\/demo\/images\/staff\//);
 
   await page.goto("/b/demo");
   const staffPhoto = page.getByRole("radio", { name: "Profissional Exemplo" })
