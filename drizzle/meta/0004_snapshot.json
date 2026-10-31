@@ -2636,7 +2636,7 @@
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
-          "default": "true"
+          "default": true
         },
         "performed_at": {
           "name": "performed_at",
