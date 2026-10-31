@@ -39,6 +39,9 @@ export function ServiceChoices({
                 <span className="mt-1 block text-xs text-muted-foreground">
                   {service.durationMinutes} min · {formatPriceCents(service.priceCents)}
                 </span>
+                {value === service.id ? (
+                  <span className="mt-1 block text-xs font-semibold text-primary">Selecionado</span>
+                ) : null}
               </span>
             </span>
           </label>
@@ -68,7 +71,10 @@ export function StaffChoices({
             />
             <span className={card}>
               <span className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-muted text-xs font-semibold text-muted-foreground" aria-hidden="true">Todos</span>
-              <span className="text-sm font-semibold text-foreground">Qualquer profissional compatível</span>
+              <span className="text-sm font-semibold text-foreground">
+                Qualquer profissional compatível
+                {value === "" ? <span className="mt-1 block text-xs text-primary">Selecionado</span> : null}
+              </span>
             </span>
           </label>
         ) : null}
@@ -85,7 +91,10 @@ export function StaffChoices({
             />
             <span className={card}>
               <CatalogPhoto src={member.imageUrl} name={member.name} className="size-16" />
-              <span className="min-w-0 text-sm font-semibold text-foreground">{member.name}</span>
+              <span className="min-w-0 text-sm font-semibold text-foreground">
+                {member.name}
+                {value === member.id ? <span className="mt-1 block text-xs text-primary">Selecionado</span> : null}
+              </span>
             </span>
           </label>
         ))}
