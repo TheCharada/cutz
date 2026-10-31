@@ -83,4 +83,13 @@ test("lets the customer join the waitlist even when a bookable slot exists", asy
   await waitlist.getByLabel("Telefone").fill(`(13) 9${suffix}-7002`);
   await waitlist.getByRole("button", { name: "Entrar na lista de espera" }).click();
   await expect(page.getByRole("heading", { name: "Lista de espera ativada" })).toBeVisible();
+
+  const managementLink = page.getByRole("link", { name: "Gerenciar lista de espera" });
+  const href = await managementLink.getAttribute("href");
+  expect(href).toBeTruthy();
+  await page.goto(href!);
+  await page.getByRole("button", { name: "Sair da lista de espera" }).click();
+  await page.getByRole("alertdialog", { name: "Sair da lista de espera?" })
+    .getByRole("button", { name: "Confirmar saída" }).click();
+  await expect(page.getByText("Entrada cancelada")).toBeVisible();
 });
