@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { StorageProvider, StoredFile } from "./storage-provider";
 
-const mediaKey = /^(services|staff)\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/;
+const mediaKey = /^(services|staff|products)\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/;
 
 export class LocalStorageProvider implements StorageProvider {
   private readonly root: string;
