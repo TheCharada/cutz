@@ -235,8 +235,22 @@ export async function getAppointmentCapability(
   const database = options.database ?? getDb();
   const appointment = await getAppointmentByManagementTokenHash(database, hashOpaqueToken(token));
   if (!appointment) return { status: "not-found" as const };
-  const snapshots = await loadAppointmentSnapshots(database, appointment);
-  return { status: "ok" as const, ...publicAppointment(appointment, snapshots) };
+  const [snapshots, booked] = await Promise.all([
+    loadAppointmentSnapshots(database, appointment),
+    getBookedServiceRecord(database, appointment.barbershopId, appointment.id),
+  ]);
+  const details = publicAppointment(appointment, snapshots);
+  return {
+    status: "ok" as const,
+    ...details,
+    service: {
+      ...details.service,
+      name: booked?.serviceNameSnapshot ?? details.service.name,
+      durationMinutes: booked?.durationMinutesSnapshot ?? details.service.durationMinutes,
+      bookedPriceCents: booked?.unitPriceCents ?? null,
+      historicalSnapshotComplete: booked?.historicalSnapshotComplete ?? false,
+    },
+  };
 }
 
 export async function getRescheduleAvailabilityByCapability(
