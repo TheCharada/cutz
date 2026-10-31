@@ -81,6 +81,7 @@ export async function findStaffById(
       name: staffMembers.name,
       active: staffMembers.active,
       acceptsAppointments: staffMembers.acceptsAppointments,
+      imageKey: staffMembers.imageKey,
     })
     .from(staffMembers)
     .where(and(eq(staffMembers.id, staffId), eq(staffMembers.barbershopId, barbershopId)))
