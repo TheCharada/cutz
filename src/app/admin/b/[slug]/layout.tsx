@@ -46,6 +46,9 @@ export default async function AdminBarbershopLayout({
                   <Link className={linkClass} href={`/admin/b/${slug}/services`}>
                     Serviços
                   </Link>
+                  <Link className={linkClass} href={`/admin/b/${slug}/products`}>
+                    Produtos
+                  </Link>
                   <Link className={linkClass} href={`/admin/b/${slug}/staff`}>
                     Profissionais
                   </Link>

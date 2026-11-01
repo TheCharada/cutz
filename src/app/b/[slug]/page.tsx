@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { isTelegramLinkingEnabled } from "@/config/telegram-linking";
@@ -48,6 +49,12 @@ export default async function PublicBookingPage({ params }: PageProps) {
         description="Escolha serviço, profissional e horário. Seus dados ficam lembrados neste navegador para os próximos agendamentos."
       />
 
+      <div className="mt-5">
+        <Link href={`/b/${slug}/products`}
+          className="inline-flex rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring">
+          Ver produtos disponíveis
+        </Link>
+      </div>
       <div className="mt-8">
         <PublicBookingExperience
           slug={slug}
